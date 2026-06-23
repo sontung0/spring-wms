@@ -2,11 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Restructure the single-module project into a Maven multi-module build and add a black-box E2E test module with Testcontainers + RestAssured.
+**Goal:** Restructure the single-module project into a Maven multi-module build and add a black-box E2E test module with Testcontainers + RestTestClient.
 
 **Architecture:** Root POM becomes a pure `pom` aggregator. Existing source moves to `app/` via `git mv`. New `e2e/` module depends on the compiled app JAR at test scope and boots the full application against a real MySQL container. Tests communicate only over HTTP — zero compile-time dependency on app internals.
 
-**Tech Stack:** Spring Boot 4.1.0, Maven multi-module, Testcontainers 2.0.5 (`testcontainers-mysql`, `testcontainers-junit-jupiter`), RestAssured 5.5.1, JUnit 5, Flyway, MySQL LTS Docker image.
+**Tech Stack:** Spring Boot 4.1.0, Maven multi-module, Testcontainers 2.0.x (`testcontainers-mysql`, `testcontainers-junit-jupiter`), RestTestClient (Spring Framework 7.0, bundled with Spring Boot 4.1.0), JUnit 5, Flyway, MySQL LTS Docker image.
+
+> **Implementation note:** RestAssured 5.5.1 was originally planned but replaced by RestTestClient due to Java 26 incompatibility. RestAssured's Groovy 5.0.6 internals trigger `Class.isAssignableFrom(Native Method)` NPE on Java 26's stricter module system. RestTestClient (`org.springframework.test.web.servlet.client.RestTestClient`) from Spring Framework 7.0 provides `bindToServer()` for real HTTP connections with a fluent assertion API — no additional dependencies needed.
 
 **Spec:** `docs/superpowers/specs/2026-06-23-blackbox-e2e-testing.md`
 
@@ -20,7 +22,7 @@
 | Create | `app/pom.xml` | App module: all deps, plugins, depMgmt |
 | Move | `src/main/` → `app/src/main/` | `git mv` (history preserved) |
 | Move | `src/test/` → `app/src/test/` | `git mv` (history preserved) |
-| Create | `e2e/pom.xml` | E2E module: app dep, TC 2.x, RestAssured 5.5.1 |
+| Create | `e2e/pom.xml` | E2E module: app dep, TC 2.x, Testcontainers deps |
 | Create | `e2e/src/test/resources/application-e2e.properties` | E2E Spring profile config |
 | Create | `e2e/src/test/java/nst/wms/e2e/config/TestContainerConfig.java` | Singleton MySQL container |
 | Create | `e2e/src/test/java/nst/wms/e2e/AbstractE2eTest.java` | Base test class |
@@ -337,19 +339,6 @@ git commit -m "refactor: move src/ into app/ submodule via git mv"
             <artifactId>testcontainers-mysql</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <!--
-          RestAssured — NOT managed by Spring Boot BOM.
-          Version 5.5.1 is current stable; its Jackson 2.x mapper is optional —
-          RestAssured falls back to Groovy's JsonSlurper for JSON, which works
-          fine with Jackson-3-serialized string fields.
-        -->
-        <dependency>
-            <groupId>io.rest-assured</groupId>
-            <artifactId>rest-assured</artifactId>
-            <version>5.5.1</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -378,7 +367,7 @@ Expected: `BUILD SUCCESS` (no test classes to compile yet, and tests are skipped
 
 ```bash
 git add e2e/pom.xml
-git commit -m "feat: create e2e module POM with TC 2.x and RestAssured 5.5.1"
+git commit -m "feat: create e2e module POM with TC 2.x and Testcontainers deps"
 ```
 
 ---
@@ -460,13 +449,13 @@ git commit -m "feat: add TestContainerConfig with singleton MySQL container"
 ```java
 package nst.wms.e2e;
 
-import io.restassured.RestAssured;
 import nst.wms.e2e.config.TestContainerConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.client.RestTestClient;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestContainerConfig.class)
@@ -476,10 +465,13 @@ public abstract class AbstractE2eTest {
     @LocalServerPort
     protected int port;
 
+    protected RestTestClient client;
+
     @BeforeEach
     void setUp() {
-        RestAssured.port = port;
-        RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+        client = RestTestClient.bindToServer()
+                .baseUrl("http://localhost:" + port)
+                .build();
     }
 }
 ```
@@ -488,7 +480,7 @@ public abstract class AbstractE2eTest {
 
 ```bash
 git add e2e/src/test/java/nst/wms/e2e/AbstractE2eTest.java
-git commit -m "feat: add AbstractE2eTest base class with RestAssured setup"
+git commit -m "feat: add AbstractE2eTest base class with RestTestClient setup"
 ```
 
 ---
@@ -503,113 +495,121 @@ git commit -m "feat: add AbstractE2eTest base class with RestAssured setup"
 ```java
 package nst.wms.e2e.user;
 
-import io.restassured.common.mapper.TypeRef;
-import io.restassured.http.ContentType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import nst.wms.e2e.AbstractE2eTest;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.MediaType;
 
 import java.util.List;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class UserE2eTest extends AbstractE2eTest {
 
     private static final String USERS_PATH = "/api/users";
 
+    // Local DTOs — no imports from nst.wms.* (black-box guarantee)
     record CreateUserRequest(String name) {}
     record UpdateUserRequest(String name) {}
-    record UserResponse(Long id, String name, String createdAt, String updatedAt) {}
-    record UserSummary(Long id, String name) {}
-    record PageResponse<T>(List<T> data, int page, int size, long count, int pages) {
-        static <T> TypeRef<PageResponse<T>> typeRef() {
-            return new TypeRef<>() {};
-        }
-    }
+
+    public record UserResponse(
+            Long id,
+            String name,
+            @JsonProperty("createdAt") String createdAt,
+            @JsonProperty("updatedAt") String updatedAt
+    ) {}
+
+    public record UserSummary(Long id, String name) {}
+
+    public record PageResponse<T>(
+            List<T> data,
+            int page,
+            int size,
+            long count,
+            int pages
+    ) {}
 
     @Test
     void shouldCreateGetUpdateDeleteUser() {
         // Create
-        UserResponse user = given()
-                .contentType(ContentType.JSON)
+        UserResponse[] created = { null };
+        client.post().uri(USERS_PATH)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(new CreateUserRequest("Alice"))
-            .when()
-                .post(USERS_PATH)
-            .then()
-                .statusCode(201)
-                .extract().as(UserResponse.class);
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody(UserResponse.class)
+                .value(resp -> {
+                    created[0] = resp;
+                    assertThat(resp.id()).isNotNull();
+                    assertThat(resp.name()).isEqualTo("Alice");
+                    assertThat(resp.createdAt()).isNotNull();
+                });
 
-        assertThat(user.id()).isNotNull();
-        assertThat(user.name()).isEqualTo("Alice");
-        assertThat(user.createdAt()).isNotNull();
+        assertThat(created[0]).isNotNull();
+        Long userId = created[0].id();
 
         // Get by ID
-        UserResponse fetched = given()
-            .when()
-                .get("{}/{}", USERS_PATH, user.id())
-            .then()
-                .statusCode(200)
-                .extract().as(UserResponse.class);
-
-        assertThat(fetched.name()).isEqualTo("Alice");
+        client.get().uri(USERS_PATH + "/" + userId)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(UserResponse.class)
+                .value(resp -> {
+                    assertThat(resp.name()).isEqualTo("Alice");
+                });
 
         // List — should contain Alice
-        PageResponse<UserSummary> list = given()
-                .param("page", 0)
-                .param("size", 10)
-            .when()
-                .get(USERS_PATH)
-            .then()
-                .statusCode(200)
-                .extract().as(PageResponse.typeRef());
-
-        assertThat(list.data()).extracting(UserSummary::name).contains("Alice");
+        client.get().uri(uriBuilder -> uriBuilder
+                        .path(USERS_PATH)
+                        .queryParam("page", 0)
+                        .queryParam("size", 10)
+                        .build())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(new ParameterizedTypeReference<PageResponse<UserSummary>>() {})
+                .value(list -> {
+                    assertThat(list.data()).extracting(UserSummary::name).contains("Alice");
+                });
 
         // Update
-        UserResponse updated = given()
-                .contentType(ContentType.JSON)
+        client.put().uri(USERS_PATH + "/" + userId)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(new UpdateUserRequest("Alice Updated"))
-            .when()
-                .put("{}/{}", USERS_PATH, user.id())
-            .then()
-                .statusCode(200)
-                .extract().as(UserResponse.class);
-
-        assertThat(updated.name()).isEqualTo("Alice Updated");
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(UserResponse.class)
+                .value(resp -> {
+                    assertThat(resp.name()).isEqualTo("Alice Updated");
+                });
 
         // Delete
-        given()
-            .when()
-                .delete("{}/{}", USERS_PATH, user.id())
-            .then()
-                .statusCode(204);
+        client.delete().uri(USERS_PATH + "/" + userId)
+                .exchange()
+                .expectStatus().value(status -> {
+                    assertThat(status).isEqualTo(204);
+                });
 
         // Verify gone
-        given()
-            .when()
-                .get("{}/{}", USERS_PATH, user.id())
-            .then()
-                .statusCode(404);
+        client.get().uri(USERS_PATH + "/" + userId)
+                .exchange()
+                .expectStatus().isNotFound();
     }
 
     @Test
     void shouldReturn400WhenNameIsBlank() {
-        given()
-                .contentType(ContentType.JSON)
+        client.post().uri(USERS_PATH)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(new CreateUserRequest(""))
-            .when()
-                .post(USERS_PATH)
-            .then()
-                .statusCode(400);
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     @Test
     void shouldReturn404ForNonExistentUser() {
-        given()
-            .when()
-                .get("{}/{}", USERS_PATH, 99999L)
-            .then()
-                .statusCode(404);
+        client.get().uri(USERS_PATH + "/99999")
+                .exchange()
+                .expectStatus().isNotFound();
     }
 }
 ```
@@ -631,10 +631,10 @@ git commit -m "feat: add UserE2eTest — black-box CRUD + error case tests"
 - [ ] **Step 1: Run E2E tests with Maven override**
 
 ```bash
-./mvnw test -pl e2e -Dmaven.test.skip=false
+./mvnw test -pl e2e -am -Dmaven.test.skip=false
 ```
 
-Expected: Maven builds `app` first (reactor order), then builds `e2e`. Docker starts `mysql:lts` container. Flyway applies `V1__create_user_table.sql`. All 3 tests pass:
+Expected: Maven builds `app` first (reactor order via `-am`), then builds `e2e`. Docker starts `mysql:lts` container. Flyway applies `V1__create_user_table.sql`. All 3 tests pass:
 - `shouldCreateGetUpdateDeleteUser` — PASS
 - `shouldReturn400WhenNameIsBlank` — PASS
 - `shouldReturn404ForNonExistentUser` — PASS
@@ -670,5 +670,5 @@ Expected: app tests run, e2e tests are skipped (no Docker containers started).
 - [x] **Spec coverage:** Task 1 (root POM), Task 2 (app POM), Task 3 (git mv), Task 4 (e2e POM), Task 5 (e2e properties), Task 6 (TestContainerConfig), Task 7 (AbstractE2eTest), Task 8 (UserE2eTest), Task 9 (verification) — all spec sections covered.
 - [x] **Placeholder scan:** No TBD/TODO. All code is complete and copy-pasteable.
 - [x] **Type consistency:** `UserResponse`, `UserSummary`, `PageResponse`, `CreateUserRequest`, `UpdateUserRequest` record names match between `UserE2eTest` and the spec. `TestContainerConfig` class name and `@ServiceConnection` usage consistent. `AbstractE2eTest` references correct config class.
-- [x] **TC 2.x artifacts:** `testcontainers-junit-jupiter` and `testcontainers-mysql` (not the TC 1.x names). RestAssured has explicit `<version>5.5.1</version>`.
+- [x] **TC 2.x artifacts:** `testcontainers-junit-jupiter` and `testcontainers-mysql` (not the TC 1.x names). RestTestClient requires no explicit version (bundled with Spring Framework 7.0 via Spring Boot 4.1.0).
 - [x] **`MySQLContainer` import:** `org.testcontainers.containers.MySQLContainer` — confirmed valid in TC 2.0.x jar.
