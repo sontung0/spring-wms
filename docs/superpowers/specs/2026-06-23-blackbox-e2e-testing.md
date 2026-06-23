@@ -13,7 +13,7 @@ A separate `e2e/` Maven submodule that runs fully black-box end-to-end tests aga
 
 - **Maven Multi-Module** (standard — root POM is `packaging=pom`, `app/` submodule carries the code)
 - **JUnit 5** via `spring-boot-starter-test`
-- **Testcontainers** (`mysql` module, `junit-jupiter`, `spring-boot-testcontainers`)
+- **Testcontainers 2.0.x** (`testcontainers-mysql`, `testcontainers-junit-jupiter`, `spring-boot-testcontainers`)
 - **RestAssured** for fluent HTTP assertions
 - **Spring Boot 4.1.0** `@SpringBootTest(webEnvironment = RANDOM_PORT)`
 - **`@ServiceConnection`** for auto-wiring Testcontainers to Spring Boot datasource
@@ -207,21 +207,32 @@ All existing dependencies, plugins, and dependency management move here.
             <artifactId>spring-boot-testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
+        <!--
+          Testcontainers 2.0.x (managed by Spring Boot 4.1.0 BOM):
+          artifact IDs changed from TC 1.x — 'junit-jupiter' → 'testcontainers-junit-jupiter',
+          'mysql' → 'testcontainers-mysql'.
+        -->
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>mysql</artifactId>
+            <artifactId>testcontainers-mysql</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- RestAssured -->
+        <!--
+          RestAssured — NOT managed by Spring Boot BOM.
+          Version must be explicit. 5.5.1 is current stable; its Jackson 2.x mapper
+          is optional — RestAssured falls back to Groovy's JsonSlurper for JSON,
+          which works fine with Jackson-3-serialized string fields.
+        -->
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
+            <version>5.5.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -508,6 +519,8 @@ The reactor resolves `e2e`'s dependency on the `app` JAR automatically — no `m
 | **`<classifier>boot</classifier>`** | Preserves plain JAR as default artifact for e2e dependency. Fat JAR for deployment gets `-boot` suffix. |
 | **RestAssured fluent API** | Readable BDD‑style given/when/then. Built‑in JSON parsing, status code assertions. |
 | **Skipped by default** | `<maven.test.skip>true</maven.test.skip>` prevents accidental container startup in normal test runs. |
+| **TC 2.0.x artifact IDs** | Spring Boot 4.1.0 BOM manages Testcontainers 2.0.5. Artifact IDs changed: `mysql` → `testcontainers-mysql`, `junit-jupiter` → `testcontainers-junit-jupiter`. `MySQLContainer` class path unchanged (`org.testcontainers.containers.MySQLContainer`). |
+| **RestAssured explicit version** | RestAssured is not in Spring Boot BOM. Version 5.5.1 specified explicitly. Jackson 2.x mapper is optional — Groovy's JsonSlurper handles JSON deserialization. |
 
 ---
 
