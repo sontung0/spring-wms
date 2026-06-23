@@ -1,10 +1,10 @@
 package nst.wms.e2e;
 
-import io.restassured.RestAssured;
 import nst.wms.e2e.config.TestContainerConfig;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -13,12 +13,11 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("e2e")
 public abstract class AbstractE2eTest {
 
-    @LocalServerPort
-    protected int port;
+    @Autowired
+    protected TestRestTemplate restTemplate;
 
     @BeforeEach
     void setUp() {
-        RestAssured.port = port;
-        RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+        // No special setup needed — TestRestTemplate is auto-configured
     }
 }

@@ -1,111 +1,115 @@
 package nst.wms.e2e.user;
 
-import io.restassured.common.mapper.TypeRef;
-import io.restassured.http.ContentType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import nst.wms.e2e.AbstractE2eTest;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 
 import java.util.List;
+import java.util.Map;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class UserE2eTest extends AbstractE2eTest {
 
     private static final String USERS_PATH = "/api/users";
 
+    // Local DTOs — no imports from nst.wms.* (black-box guarantee)
     record CreateUserRequest(String name) {}
     record UpdateUserRequest(String name) {}
-    record UserResponse(Long id, String name, String createdAt, String updatedAt) {}
-    record UserSummary(Long id, String name) {}
-    record PageResponse<T>(List<T> data, int page, int size, long count, int pages) {
-        static <T> TypeRef<PageResponse<T>> typeRef() {
-            return new TypeRef<>() {};
-        }
-    }
+
+    public record UserResponse(
+            Long id,
+            String name,
+            @JsonProperty("createdAt") String createdAt,
+            @JsonProperty("updatedAt") String updatedAt
+    ) {}
+
+    public record UserSummary(Long id, String name) {}
+
+    public record PageResponse<T>(
+            List<T> data,
+            int page,
+            int size,
+            long count,
+            int pages
+    ) {}
 
     @Test
     void shouldCreateGetUpdateDeleteUser() {
         // Create
-        UserResponse user = given()
-                .contentType(ContentType.JSON)
-                .body(new CreateUserRequest("Alice"))
-            .when()
-                .post(USERS_PATH)
-            .then()
-                .statusCode(201)
-                .extract().as(UserResponse.class);
+        var createRequest = new HttpEntity<>(new CreateUserRequest("Alice"));
+        var createResponse = restTemplate.exchange(
+                USERS_PATH, HttpMethod.POST, createRequest, UserResponse.class);
 
+        assertThat(createResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        UserResponse user = createResponse.getBody();
+        assertThat(user).isNotNull();
         assertThat(user.id()).isNotNull();
         assertThat(user.name()).isEqualTo("Alice");
         assertThat(user.createdAt()).isNotNull();
 
         // Get by ID
-        UserResponse fetched = given()
-            .when()
-                .get("{}/{}", USERS_PATH, user.id())
-            .then()
-                .statusCode(200)
-                .extract().as(UserResponse.class);
+        var getResponse = restTemplate.exchange(
+                USERS_PATH + "/" + user.id(), HttpMethod.GET, null, UserResponse.class);
 
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        UserResponse fetched = getResponse.getBody();
+        assertThat(fetched).isNotNull();
         assertThat(fetched.name()).isEqualTo("Alice");
 
         // List — should contain Alice
-        PageResponse<UserSummary> list = given()
-                .param("page", 0)
-                .param("size", 10)
-            .when()
-                .get(USERS_PATH)
-            .then()
-                .statusCode(200)
-                .extract().as(PageResponse.typeRef());
+        var listResponse = restTemplate.exchange(
+                USERS_PATH + "?page=0&size=10",
+                HttpMethod.GET, null,
+                new ParameterizedTypeReference<PageResponse<UserSummary>>() {});
 
+        assertThat(listResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        PageResponse<UserSummary> list = listResponse.getBody();
+        assertThat(list).isNotNull();
         assertThat(list.data()).extracting(UserSummary::name).contains("Alice");
 
         // Update
-        UserResponse updated = given()
-                .contentType(ContentType.JSON)
-                .body(new UpdateUserRequest("Alice Updated"))
-            .when()
-                .put("{}/{}", USERS_PATH, user.id())
-            .then()
-                .statusCode(200)
-                .extract().as(UserResponse.class);
+        var updateRequest = new HttpEntity<>(new UpdateUserRequest("Alice Updated"));
+        var updateResponse = restTemplate.exchange(
+                USERS_PATH + "/" + user.id(), HttpMethod.PUT, updateRequest, UserResponse.class);
 
+        assertThat(updateResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        UserResponse updated = updateResponse.getBody();
+        assertThat(updated).isNotNull();
         assertThat(updated.name()).isEqualTo("Alice Updated");
 
         // Delete
-        given()
-            .when()
-                .delete("{}/{}", USERS_PATH, user.id())
-            .then()
-                .statusCode(204);
+        var deleteResponse = restTemplate.exchange(
+                USERS_PATH + "/" + user.id(), HttpMethod.DELETE, null, Void.class);
+
+        assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
 
         // Verify gone
-        given()
-            .when()
-                .get("{}/{}", USERS_PATH, user.id())
-            .then()
-                .statusCode(404);
+        var goneResponse = restTemplate.exchange(
+                USERS_PATH + "/" + user.id(), HttpMethod.GET, null, UserResponse.class);
+
+        assertThat(goneResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
     void shouldReturn400WhenNameIsBlank() {
-        given()
-                .contentType(ContentType.JSON)
-                .body(new CreateUserRequest(""))
-            .when()
-                .post(USERS_PATH)
-            .then()
-                .statusCode(400);
+        var request = new HttpEntity<>(new CreateUserRequest(""));
+        var response = restTemplate.exchange(
+                USERS_PATH, HttpMethod.POST, request, UserResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Test
     void shouldReturn404ForNonExistentUser() {
-        given()
-            .when()
-                .get("{}/{}", USERS_PATH, 99999L)
-            .then()
-                .statusCode(404);
+        var response = restTemplate.exchange(
+                USERS_PATH + "/99999", HttpMethod.GET, null, UserResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 }
