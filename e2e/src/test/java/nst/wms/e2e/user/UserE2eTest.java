@@ -4,13 +4,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import nst.wms.e2e.AbstractE2eTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,74 +38,82 @@ class UserE2eTest extends AbstractE2eTest {
     @Test
     void shouldCreateGetUpdateDeleteUser() {
         // Create
-        var createRequest = new HttpEntity<>(new CreateUserRequest("Alice"));
-        var createResponse = restTemplate.exchange(
-                USERS_PATH, HttpMethod.POST, createRequest, UserResponse.class);
+        UserResponse[] created = { null };
+        client.post().uri(USERS_PATH)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new CreateUserRequest("Alice"))
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody(UserResponse.class)
+                .value(resp -> {
+                    created[0] = resp;
+                    assertThat(resp.id()).isNotNull();
+                    assertThat(resp.name()).isEqualTo("Alice");
+                    assertThat(resp.createdAt()).isNotNull();
+                });
 
-        assertThat(createResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        UserResponse user = createResponse.getBody();
-        assertThat(user).isNotNull();
-        assertThat(user.id()).isNotNull();
-        assertThat(user.name()).isEqualTo("Alice");
-        assertThat(user.createdAt()).isNotNull();
+        assertThat(created[0]).isNotNull();
+        Long userId = created[0].id();
 
         // Get by ID
-        var getResponse = restTemplate.exchange(
-                USERS_PATH + "/" + user.id(), HttpMethod.GET, null, UserResponse.class);
-
-        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        UserResponse fetched = getResponse.getBody();
-        assertThat(fetched).isNotNull();
-        assertThat(fetched.name()).isEqualTo("Alice");
+        client.get().uri(USERS_PATH + "/" + userId)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(UserResponse.class)
+                .value(resp -> {
+                    assertThat(resp.name()).isEqualTo("Alice");
+                });
 
         // List — should contain Alice
-        var listResponse = restTemplate.exchange(
-                USERS_PATH + "?page=0&size=10",
-                HttpMethod.GET, null,
-                new ParameterizedTypeReference<PageResponse<UserSummary>>() {});
-
-        assertThat(listResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        PageResponse<UserSummary> list = listResponse.getBody();
-        assertThat(list).isNotNull();
-        assertThat(list.data()).extracting(UserSummary::name).contains("Alice");
+        client.get().uri(uriBuilder -> uriBuilder
+                        .path(USERS_PATH)
+                        .queryParam("page", 0)
+                        .queryParam("size", 10)
+                        .build())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(new ParameterizedTypeReference<PageResponse<UserSummary>>() {})
+                .value(list -> {
+                    assertThat(list.data()).extracting(UserSummary::name).contains("Alice");
+                });
 
         // Update
-        var updateRequest = new HttpEntity<>(new UpdateUserRequest("Alice Updated"));
-        var updateResponse = restTemplate.exchange(
-                USERS_PATH + "/" + user.id(), HttpMethod.PUT, updateRequest, UserResponse.class);
-
-        assertThat(updateResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        UserResponse updated = updateResponse.getBody();
-        assertThat(updated).isNotNull();
-        assertThat(updated.name()).isEqualTo("Alice Updated");
+        client.put().uri(USERS_PATH + "/" + userId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new UpdateUserRequest("Alice Updated"))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(UserResponse.class)
+                .value(resp -> {
+                    assertThat(resp.name()).isEqualTo("Alice Updated");
+                });
 
         // Delete
-        var deleteResponse = restTemplate.exchange(
-                USERS_PATH + "/" + user.id(), HttpMethod.DELETE, null, Void.class);
-
-        assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        client.delete().uri(USERS_PATH + "/" + userId)
+                .exchange()
+                .expectStatus().value(status -> {
+                    assertThat(status).isEqualTo(204);
+                });
 
         // Verify gone
-        var goneResponse = restTemplate.exchange(
-                USERS_PATH + "/" + user.id(), HttpMethod.GET, null, UserResponse.class);
-
-        assertThat(goneResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        client.get().uri(USERS_PATH + "/" + userId)
+                .exchange()
+                .expectStatus().isNotFound();
     }
 
     @Test
     void shouldReturn400WhenNameIsBlank() {
-        var request = new HttpEntity<>(new CreateUserRequest(""));
-        var response = restTemplate.exchange(
-                USERS_PATH, HttpMethod.POST, request, UserResponse.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        client.post().uri(USERS_PATH)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new CreateUserRequest(""))
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     @Test
     void shouldReturn404ForNonExistentUser() {
-        var response = restTemplate.exchange(
-                USERS_PATH + "/99999", HttpMethod.GET, null, UserResponse.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        client.get().uri(USERS_PATH + "/99999")
+                .exchange()
+                .expectStatus().isNotFound();
     }
 }
