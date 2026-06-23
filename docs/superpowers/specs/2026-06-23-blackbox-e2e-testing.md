@@ -2,7 +2,8 @@
 
 ## Status
 
-- **2026-06-23:** Approved.
+- **2026-06-23:** Approved (original design).
+- **2026-06-23:** Revised — Maven requires `packaging=pom` for `<modules>`. Switched from hybrid to standard multi-module: root becomes pure aggregator, existing code moves to `app/` submodule.
 
 ## Overview
 
@@ -10,25 +11,31 @@ A separate `e2e/` Maven submodule that runs fully black-box end-to-end tests aga
 
 ## Tech Stack
 
-- **Maven Multi-Module** (hybrid — root POM is `packaging=jar` with `<modules>`)
+- **Maven Multi-Module** (standard — root POM is `packaging=pom`, `app/` submodule carries the code)
 - **JUnit 5** via `spring-boot-starter-test`
 - **Testcontainers** (`mysql` module, `junit-jupiter`, `spring-boot-testcontainers`)
 - **RestAssured** for fluent HTTP assertions
 - **Spring Boot 4.1.0** `@SpringBootTest(webEnvironment = RANDOM_PORT)`
 - **`@ServiceConnection`** for auto-wiring Testcontainers to Spring Boot datasource
+- **MySQL LTS** via `mysql:lts` Docker tag (always tracks latest LTS; MySQL 8.0 reached EOL April 2026)
 
 ---
 
-## Maven Multi-Module Structure (Hybrid)
+## Standard Multi-Module Structure
 
-The root POM retains `packaging=jar` and its existing `src/` — no files are moved. A `<modules>` block declares the `e2e/` child module. Maven's reactor builds the root first (producing the plain JAR), then the e2e module compiles against it at `test` scope.
+Maven requires `packaging=pom` for any POM that declares `<modules>`. Therefore the root POM becomes a pure aggregator — it produces no artifact. All existing source code moves into an `app/` submodule (the single `git mv` operation — history preserved).
 
 ```
 wms/
-├── pom.xml                  # unchanged packaging=jar, +<modules><module>e2e</module>
-├── src/                     # untouched — test resources, Flyway migrations all remain
+├── pom.xml                  # packaging=pom, <modules>[app, e2e]
+├── app/                     # ← existing src/ moved here (git mv, history preserved)
+│   ├── pom.xml              # NEW: inherits from root, packaging=jar, all deps & plugins
+│   └── src/                 # exactly what was at root/src/ — no internal restructuring
+│       ├── main/java/nst/wms/...
+│       ├── main/resources/...
+│       └── test/java/nst/wms/...
 └── e2e/
-    ├── pom.xml              # NEW: depends on root JAR at test scope
+    ├── pom.xml              # NEW: depends on app JAR at test scope
     ├── src/test/java/nst/wms/e2e/
     │   ├── config/
     │   │   └── TestContainerConfig.java
@@ -39,35 +46,123 @@ wms/
         └── application-e2e.properties
 ```
 
+### Move command
+
+```bash
+mkdir -p app
+git mv src/main app/
+git mv src/test app/
+```
+
+No Java package changes — `nst.wms.WmsApplication` stays `nst.wms.WmsApplication`.
+
 ---
 
-## Root POM Changes
+## Root POM
 
-1. **Add `<modules>` block** at the end, before `</project>`:
-
-```xml
-<modules>
-    <module>e2e</module>
-</modules>
-```
-
-2. **Add `<classifier>boot</classifier>`** to the `spring-boot-maven-plugin` — this preserves the plain JAR as the default artifact (consumed by e2e) while the repackaged fat JAR gets a `-boot` suffix:
+Pure aggregator — no source, no build, no dependencies. Only declares modules and shared properties.
 
 ```xml
-<plugin>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-maven-plugin</artifactId>
-    <executions>
-        <execution>
-            <id>repackage</id>
-            <goals><goal>repackage</goal></goals>
-            <configuration>
-                <classifier>boot</classifier>
-            </configuration>
-        </execution>
-    </executions>
-</plugin>
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" ...>
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.0</version>
+        <relativePath/>
+    </parent>
+    <groupId>nst</groupId>
+    <artifactId>wms</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>              <!-- ← was jar -->
+    <name>wms</name>
+    <properties>
+        <java.version>26</java.version>
+    </properties>
+    <modules>
+        <module>app</module>
+        <module>e2e</module>
+    </modules>
+</project>
 ```
+
+### Root POM — what stays vs what moves
+
+| Stays in root | Moves to `app/pom.xml` |
+|---|---|
+| Spring Boot parent reference | All `<dependencies>` |
+| `<groupId>`, `<artifactId>`, `<version>` | `<build><plugins>` (including spring-boot-maven-plugin) |
+| `<packaging>pom</packaging>` | `<dependencyManagement>` (spring-modulith-bom) |
+| `<modules>` | |
+| `<properties>` (e.g. `java.version`) | |
+
+---
+
+## app/pom.xml
+
+All existing dependencies, plugins, and dependency management move here.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>nst</groupId>
+        <artifactId>wms</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <artifactId>app</artifactId>
+    <packaging>jar</packaging>
+    <name>wms-app</name>
+
+    <!-- All dependencies from root POM, unchanged -->
+    <dependencies>
+        <!-- ... identical to current root POM's dependencies ... -->
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>repackage</id>
+                        <goals><goal>repackage</goal></goals>
+                        <configuration>
+                            <classifier>boot</classifier>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.modulith</groupId>
+                <artifactId>spring-modulith-bom</artifactId>
+                <version>2.1.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>
+```
+
+### Key decisions
+
+- **`<classifier>boot</classifier>`** on the repackage goal — preserves the plain JAR as the default artifact so `e2e` can depend on it; the deployable fat JAR gets a `-boot` suffix.
+- **parent → `nst:wms` (root)** — inherits Spring Boot BOM transitively through the root's parent chain.
+- **artifactId = `app`** — clean for `-pl app` / `-pl e2e` reactor commands.
+
+---
 
 ## e2e/pom.xml
 
@@ -94,7 +189,7 @@ wms/
         <!-- App JAR (plain artifact, not boot JAR) — @SpringBootTest classpath -->
         <dependency>
             <groupId>nst</groupId>
-            <artifactId>wms</artifactId>
+            <artifactId>app</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -177,7 +272,7 @@ import org.testcontainers.containers.MySQLContainer;
 @TestConfiguration(proxyBeanMethods = false)
 public class TestContainerConfig {
 
-    static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.0")
+    static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:lts")
             .withDatabaseName("wms")
             .withUsername("test")
             .withPassword("test");
@@ -392,11 +487,11 @@ class UserE2eTest extends AbstractE2eTest {
 
 | Command | What runs | Use case |
 |---------|-----------|----------|
-| `./mvnw test` | Unit + integration tests only | CI fast feedback, local dev |
+| `./mvnw test -pl app` | Unit + integration tests only | CI fast feedback, local dev |
 | `./mvnw test -pl e2e -Dmaven.test.skip=false` | Just E2E tests | CI E2E stage, local E2E run |
-| `./mvnw test -pl . -pl e2e -Dmaven.test.skip=false` | All tests | Full suite |
+| `./mvnw test` | All modules (app tests + e2e if skip is flipped) | Full suite |
 
-The reactor resolves `e2e`'s dependency on the root JAR automatically — no `mvn install` needed for interactive use (Maven builds the root project first in the reactor).
+The reactor resolves `e2e`'s dependency on the `app` JAR automatically — no `mvn install` needed for interactive use (Maven builds `app` first in the reactor, then `e2e` against it).
 
 ---
 
@@ -405,7 +500,7 @@ The reactor resolves `e2e`'s dependency on the root JAR automatically — no `mv
 | Decision | Rationale |
 |----------|-----------|
 | **Separate Maven module** | Compile-time enforcement — e2e code physically cannot `import nst.wms.UserService`. Only the compiled JAR is on test classpath. |
-| **Hybrid POM (no parent POM shift)** | `packaging=jar` with `<modules>` is valid Maven. No source files moved. Zero disruption to existing build. |
+| **Standard multi-module** | Root is `packaging=pom` with `<modules>` — the only approach Maven allows. Existing code moves into `app/` via `git mv` (history preserved). |
 | **Singleton container via static init + `@Bean`** | One MySQL container per JVM regardless of number of test classes. Fast startup for E2E suite. |
 | **`@ServiceConnection`** | Eliminates `@DynamicPropertySource` boilerplate. Spring Boot 4.1 natively supports it with Testcontainers. |
 | **`@ActiveProfiles("e2e")`** | Isolates E2E configuration from `test` profile. Different settings without touching existing configs. |
@@ -418,23 +513,26 @@ The reactor resolves `e2e`'s dependency on the root JAR automatically — no `mv
 
 ## Implementation Tasks
 
-1. **Root POM changes** — add `<modules>` block, add `<classifier>boot</classifier>` to spring-boot-maven-plugin
-2. **Create `e2e/pom.xml`** — parent, dependencies, surefire config
-3. **Create `application-e2e.properties`** — Flyway + JPA settings
-4. **Create `TestContainerConfig.java`** — singleton MySQL container with `@ServiceConnection`
-5. **Create `AbstractE2eTest.java`** — `@SpringBootTest(RANDOM_PORT)`, `@Import`, RestAssured setup
-6. **Create `UserE2eTest.java`** — black-box CRUD + error case tests
-7. **Verify compilation** — `./mvnw compile -pl e2e`
-8. **Run E2E tests** — `./mvnw test -pl e2e -Dmaven.test.skip=false`
-9. **Verify existing tests still pass** — `./mvnw test -pl .`
+1. **Rewrite root POM** — `packaging=pom`, add `<modules>[app, e2e]`, remove all deps/plugins/depMgmt
+2. **Create `app/pom.xml`** — parent → `nst:wms`, all deps, spring-boot-maven-plugin with `<classifier>boot</classifier>`, spring-modulith-bom depMgmt
+3. **Move source files** — `mkdir -p app && git mv src/main app/ && git mv src/test app/`
+4. **Create `e2e/pom.xml`** — parent → `nst:wms`, depends on `nst:app:test`, Testcontainers + RestAssured deps, surefire with `<skipTests>${maven.test.skip}</skipTests>`
+5. **Create `application-e2e.properties`** — Flyway + JPA settings
+6. **Create `TestContainerConfig.java`** — singleton MySQL container with `@ServiceConnection`
+7. **Create `AbstractE2eTest.java`** — `@SpringBootTest(RANDOM_PORT)`, `@Import`, RestAssured setup
+8. **Create `UserE2eTest.java`** — black-box CRUD + error case tests
+9. **Verify compilation** — `./mvnw compile -pl app`
+10. **Run E2E tests** — `./mvnw test -pl e2e -Dmaven.test.skip=false`
+11. **Verify existing tests still pass** — `./mvnw test -pl app`
 
 ---
 
 ## Verification & Success Criteria
 
-- [ ] `./mvnw test` succeeds without starting any Docker containers
+- [ ] `./mvnw test -pl app` succeeds without starting any Docker containers
 - [ ] `./mvnw test -pl e2e -Dmaven.test.skip=false` starts MySQL container, runs all E2E tests, all pass
-- [ ] `./mvnw test` still passes (existing unit + integration tests unaffected)
+- [ ] `./mvnw test -pl app` still passes (existing unit + integration tests unaffected)
 - [ ] No class from `nst.wms` package (except DTO records in e2e) is imported in e2e source
 - [ ] Container lifecycle works: only one MySQL container started for all test classes
 - [ ] No test relies on data from another test (each test creates its own state or is read-only)
+- [ ] Git history preserved for all moved files (`git log --follow app/pom.xml` shows full history)
