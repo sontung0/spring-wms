@@ -1,4 +1,4 @@
-package nst.wms.user.internal.presentation.dto;
+package nst.wms.user.presentation.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -12,11 +12,6 @@ public class UpdateUserRequest {
     @Schema(description = "User name", example = "John Doe", maxLength = 255)
     private String name;
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 }

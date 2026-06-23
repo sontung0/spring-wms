@@ -2,7 +2,7 @@ package nst.wms.user.application;
 
 import nst.wms.user.domain.User;
 import nst.wms.user.domain.UserNotFoundException;
-import nst.wms.user.internal.infrastructure.UserRepository;
+import nst.wms.user.infrastructure.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

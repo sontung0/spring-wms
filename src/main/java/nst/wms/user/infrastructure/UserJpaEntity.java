@@ -1,4 +1,4 @@
-package nst.wms.user.internal.infrastructure;
+package nst.wms.user.infrastructure;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

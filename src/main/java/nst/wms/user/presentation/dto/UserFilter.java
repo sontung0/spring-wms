@@ -1,4 +1,4 @@
-package nst.wms.user.internal.presentation.dto;
+package nst.wms.user.presentation.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -8,11 +8,6 @@ public class UserFilter {
     @Schema(description = "Filter by name (case-insensitive, partial match)", example = "John")
     private String name;
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 }

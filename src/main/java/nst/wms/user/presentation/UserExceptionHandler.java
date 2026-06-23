@@ -1,4 +1,4 @@
-package nst.wms.user.internal.presentation;
+package nst.wms.user.presentation;
 
 import nst.wms.common.api.ErrorResponse;
 import nst.wms.user.domain.UserNotFoundException;

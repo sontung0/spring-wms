@@ -1,8 +1,8 @@
-package nst.wms.user.internal.presentation;
+package nst.wms.user.presentation;
 
-import nst.wms.user.internal.presentation.dto.CreateUserRequest;
-import nst.wms.user.internal.presentation.dto.UpdateUserRequest;
-import nst.wms.user.internal.presentation.dto.UserResponse;
+import nst.wms.user.presentation.dto.CreateUserRequest;
+import nst.wms.user.presentation.dto.UpdateUserRequest;
+import nst.wms.user.presentation.dto.UserResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;

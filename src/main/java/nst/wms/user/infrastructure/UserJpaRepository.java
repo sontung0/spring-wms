@@ -1,4 +1,4 @@
-package nst.wms.user.internal.infrastructure;
+package nst.wms.user.infrastructure;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;

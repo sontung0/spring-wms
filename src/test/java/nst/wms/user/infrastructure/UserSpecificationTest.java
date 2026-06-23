@@ -1,6 +1,6 @@
-package nst.wms.user.internal.infrastructure;
+package nst.wms.user.infrastructure;
 
-import nst.wms.user.internal.presentation.dto.UserFilter;
+import nst.wms.user.presentation.dto.UserFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.jpa.domain.Specification;
 
