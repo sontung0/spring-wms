@@ -23,9 +23,10 @@ The design is provider-agnostic: a new IdP is added by implementing one interfac
 6. App validates `state` against cache (CSRF protection), evicts it
 7. App exchanges `code` with IdP token endpoint using `RestClient` → receives IdP access token + id token
 8. App fetches user profile from IdP using `RestClient` (email, name, avatar URL)
-9. App calls `userService.updateByEmail(email, data)` → upserts `users` + `user_identities`, returns `User` with internal `id`
-10. App issues WMS JWT (`sub` = `users.id`, `iat`, `exp`) and returns `{ accessToken }` to the SPA
-11. SPA stores the token; uses `Authorization: Bearer <accessToken>` on all subsequent API calls
+9. App calls `userService.updateByEmail(email, { name, avatarUrl })` → upserts `users` table, returns `User` with internal `id`
+10. App saves `user_identities` record (auth module owns this table) to link the provider identity to the user
+11. App issues WMS JWT (`sub` = `users.id`, `iat`, `exp`) and returns `{ accessToken }` to the SPA
+12. SPA stores the token; uses `Authorization: Bearer <accessToken>` on all subsequent API calls
 
 ## 4. Module Structure
 
@@ -47,6 +48,7 @@ nst.wms.auth
     ├── GoogleOAuthProvider         (implements OAuthProvider)
     ├── GitHubOAuthProvider         (implements OAuthProvider)
     ├── JwtTokenProvider            (RSA-signed JWT issue/verify)
+    ├── UserIdentitiesRepository    (JPA — auth module owns this table)
     └── StateCache                  (interface + Caffeine implementation)
 ```
 
@@ -162,7 +164,7 @@ ALTER TABLE users ADD COLUMN email VARCHAR(255) UNIQUE;
 **Access token (JWT)**
 
 - Algorithm: RS256 (RSA private key signs, public key verifies)
-- Lifetime: configurable via `auth.jwt.ttl` (default `PT15M` — ISO-8601 duration)
+- Lifetime: configurable via `auth.jwt.ttl` (default `PT24H` — ISO-8601 duration)
 - Claims: `sub` (users.id), `iss` (wms), `iat`, `exp`
 - Validated stateless by Spring Security on every `/api/**` request — no DB lookup
 
@@ -197,8 +199,6 @@ public interface UserService {
 }
 
 public record UpdateUserByEmailRequest(
-    String provider,
-    String providerUserId,
     String name,
     String avatarUrl
 ) {}
@@ -206,9 +206,9 @@ public record UpdateUserByEmailRequest(
 
 Behavior:
 
-1. Look up `user_identities` by `(provider, providerUserId)`
-2. If found → update `name`, `avatarUrl` if changed; return existing `User`
-3. If not found → look up `users` by `email`; if exists, create identity and link; if not, create new `User` + identity
+1. Look up `users` by `email`
+2. If found → update only non-null fields (`name`, `avatarUrl`); return `User`
+3. If not found → create new `User` with the given email and non-null fields
 
 ## 11. OAuth Client Implementation
 
@@ -228,22 +228,20 @@ public class GoogleOAuthProvider implements OAuthProvider {
 }
 ```
 
-Adding a new provider = one new class implementing `OAuthProvider` + one property block in config.
+Adding a new provider = one new class implementing `OAuthProvider` + `client-id` and `client-secret` in config. All URLs are pre-defined as constants in the provider implementation, overridable via config if needed.
 
 ## 12. Configuration
 
 ```properties
-# OAuth provider credentials
+# OAuth
 auth.oauth.redirectUri=http://localhost:3000/auth/callback
 
+# Google (URLs are pre-defined as defaults in code)
 auth.oauth.providers.google.client-id=...
 auth.oauth.providers.google.client-secret=...
-auth.oauth.providers.google.auth-url=https://accounts.google.com/o/oauth2/v2/auth
-auth.oauth.providers.google.token-url=https://oauth2.googleapis.com/token
-auth.oauth.providers.google.user-info-url=https://www.googleapis.com/oauth2/v3/userinfo
 
 # JWT
-auth.jwt.ttl=PT15M
+auth.jwt.ttl=PT24H
 auth.jwt.private-key=...
 auth.jwt.public-key=...
 auth.jwt.issuer=wms
