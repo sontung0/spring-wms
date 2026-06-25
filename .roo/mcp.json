@@ -6,6 +6,10 @@
 			"args": [
 				"serve",
 				"--mcp"
+			],
+			"alwaysAllow": [
+				"codegraph_explore",
+				"codegraph_node"
 			]
 		}
 	}

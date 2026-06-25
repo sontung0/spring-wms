@@ -33,7 +33,10 @@ class UpdateByEmailTest {
             return saved;
         });
 
-        User result = userService.updateByEmail("new@example.com", "New User", "https://avatar.url/img.png");
+        UserUpdateData data = new UserUpdateData();
+        data.name = "New User";
+        data.avatarUrl = "https://avatar.url/img.png";
+        User result = userService.updateByEmail("new@example.com", data);
 
         assertEquals(1L, result.getId());
         assertEquals("new@example.com", result.getEmail());
@@ -48,7 +51,9 @@ class UpdateByEmailTest {
         when(userRepository.findByEmail("existing@example.com")).thenReturn(Optional.of(existing));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User result = userService.updateByEmail("existing@example.com", "New Name", null);
+        UserUpdateData data = new UserUpdateData();
+        data.name = "New Name";
+        User result = userService.updateByEmail("existing@example.com", data);
 
         assertEquals(1L, result.getId());
         assertEquals("New Name", result.getName());
@@ -62,7 +67,8 @@ class UpdateByEmailTest {
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.of(existing));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User result = userService.updateByEmail("user@example.com", null, null);
+        UserUpdateData data = new UserUpdateData();
+        User result = userService.updateByEmail("user@example.com", data);
 
         assertEquals("Old Name", result.getName());
         assertEquals("old-avatar", result.getAvatarUrl());

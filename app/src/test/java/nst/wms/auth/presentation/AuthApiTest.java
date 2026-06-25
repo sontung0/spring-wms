@@ -11,6 +11,7 @@ import nst.wms.auth.domain.AuthUser;
 import nst.wms.auth.domain.OAuthProviderCode;
 import nst.wms.auth.infrastructure.UserIdentityRepository;
 import nst.wms.user.application.UserService;
+import nst.wms.user.application.UserUpdateData;
 import nst.wms.user.domain.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +80,6 @@ class AuthApiTest {
                 new java.util.HashMap<>() {{
                     put("code", "some-code");
                     put("state", "invalid-state");
-                    put("provider", "GOOGLE");
                 }});
 
         mockMvc.perform(post("/auth/callback")
@@ -95,7 +95,9 @@ class AuthApiTest {
         stateCache.put("test-state-123", "GOOGLE");
 
         // Create a test user
-        User testUser = userService.updateByEmail("api-test@example.com", "API Test", null);
+        UserUpdateData updateData = new UserUpdateData();
+        updateData.name = "API Test";
+        User testUser = userService.updateByEmail("api-test@example.com", updateData);
 
         // Mock the OAuth provider
         OAuthProvider mockProvider = mock(OAuthProvider.class);
@@ -113,7 +115,6 @@ class AuthApiTest {
                 new java.util.HashMap<>() {{
                     put("code", "valid-code");
                     put("state", "test-state-123");
-                    put("provider", "GOOGLE");
                 }});
 
         // This will fail at the OAuth provider exchange (expected, since we can't mock RestClient easily)

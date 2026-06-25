@@ -8,6 +8,7 @@ import nst.wms.auth.infrastructure.StateCache;
 import nst.wms.auth.infrastructure.UserIdentityRepository;
 import nst.wms.auth.infrastructure.OAuthProviderProperties;
 import nst.wms.user.application.UserService;
+import nst.wms.user.application.UserUpdateData;
 import nst.wms.user.domain.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,12 +67,12 @@ class AuthServiceImplTest {
         when(provider.fetchUserProfile("idp-token"))
                 .thenReturn(new AuthUser("123", "user@example.com", "Test User", "https://avatar.url"));
 
-        when(userService.updateByEmail("user@example.com", "Test User", "https://avatar.url"))
+        when(userService.updateByEmail(eq("user@example.com"), any(UserUpdateData.class)))
                 .thenReturn(new User(1L, "Test User", "user@example.com", "https://avatar.url", LocalDateTime.now(), LocalDateTime.now()));
         when(tokenService.issue(1L)).thenReturn("wms-jwt-token");
         when(oAuthProviderProperties.getRedirectUri()).thenReturn("http://localhost:3000/auth/callback");
 
-        AuthService.AuthCallbackResponse response = authService.callback("GOOGLE", "auth-code", "valid-state");
+        AuthService.AuthCallbackResponse response = authService.callback("auth-code", "valid-state");
 
         assertNotNull(response);
         assertEquals("wms-jwt-token", response.accessToken());
@@ -83,6 +84,6 @@ class AuthServiceImplTest {
         when(stateCache.getAndEvict("bad-state")).thenReturn(null);
 
         assertThrows(InvalidStateException.class,
-                () -> authService.callback("GOOGLE", "code", "bad-state"));
+                () -> authService.callback("code", "bad-state"));
     }
 }

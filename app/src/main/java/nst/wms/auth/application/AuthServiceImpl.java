@@ -5,6 +5,7 @@ import nst.wms.auth.domain.InvalidStateException;
 import nst.wms.auth.domain.OAuthProviderCode;
 import nst.wms.auth.infrastructure.*;
 import nst.wms.user.application.UserService;
+import nst.wms.user.application.UserUpdateData;
 import nst.wms.user.domain.User;
 import org.springframework.stereotype.Service;
 
@@ -46,7 +47,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public AuthCallbackResponse callback(String provider, String code, String state) {
+    public AuthCallbackResponse callback(String code, String state) {
         String storedProvider = stateCache.getAndEvict(state);
         if (storedProvider == null) {
             throw new InvalidStateException();
@@ -58,7 +59,10 @@ public class AuthServiceImpl implements AuthService {
         OAuthTokens tokens = oauthProvider.exchangeCode(code, redirectUri);
         AuthUser authUser = oauthProvider.fetchUserProfile(tokens.accessToken());
 
-        User user = userService.updateByEmail(authUser.getEmail(), authUser.getName(), authUser.getAvatarUrl());
+        UserUpdateData updateData = new UserUpdateData();
+        updateData.name = authUser.getName();
+        updateData.avatarUrl = authUser.getAvatarUrl();
+        User user = userService.updateByEmail(authUser.getEmail(), updateData);
 
         userIdentityRepository.save(user.getId(), OAuthProviderCode.valueOf(storedProvider.toUpperCase()), authUser);
 

@@ -4,7 +4,7 @@ public interface AuthService {
 
     AuthorizeResponse authorize(String provider);
 
-    AuthCallbackResponse callback(String provider, String code, String state);
+    AuthCallbackResponse callback(String code, String state);
 
     record AuthorizeResponse(String authorizationUrl) {
     }

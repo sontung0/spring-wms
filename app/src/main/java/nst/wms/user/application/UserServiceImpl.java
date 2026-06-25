@@ -55,14 +55,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User updateByEmail(String email, String name, String avatarUrl) {
+    public User updateByEmail(String email, UserUpdateData data) {
         return userRepository.findByEmail(email)
                 .map(existing -> {
-                    if (name != null) {
-                        existing.setName(name);
+                    if (data.name != null) {
+                        existing.setName(data.name);
                     }
-                    if (avatarUrl != null) {
-                        existing.setAvatarUrl(avatarUrl);
+                    if (data.avatarUrl != null) {
+                        existing.setAvatarUrl(data.avatarUrl);
                     }
                     existing.setUpdatedAt(LocalDateTime.now());
                     return userRepository.save(existing);
@@ -70,8 +70,8 @@ public class UserServiceImpl implements UserService {
                 .orElseGet(() -> {
                     User newUser = new User();
                     newUser.setEmail(email);
-                    newUser.setName(name);
-                    newUser.setAvatarUrl(avatarUrl);
+                    newUser.setName(data.name);
+                    newUser.setAvatarUrl(data.avatarUrl);
                     LocalDateTime now = LocalDateTime.now();
                     newUser.setCreatedAt(now);
                     newUser.setUpdatedAt(now);
