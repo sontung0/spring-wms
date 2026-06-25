@@ -53,4 +53,29 @@ public class UserServiceImpl implements UserService {
         }
         userRepository.deleteById(id);
     }
+
+    @Override
+    public User updateByEmail(String email, String name, String avatarUrl) {
+        return userRepository.findByEmail(email)
+                .map(existing -> {
+                    if (name != null) {
+                        existing.setName(name);
+                    }
+                    if (avatarUrl != null) {
+                        existing.setAvatarUrl(avatarUrl);
+                    }
+                    existing.setUpdatedAt(LocalDateTime.now());
+                    return userRepository.save(existing);
+                })
+                .orElseGet(() -> {
+                    User newUser = new User();
+                    newUser.setEmail(email);
+                    newUser.setName(name);
+                    newUser.setAvatarUrl(avatarUrl);
+                    LocalDateTime now = LocalDateTime.now();
+                    newUser.setCreatedAt(now);
+                    newUser.setUpdatedAt(now);
+                    return userRepository.save(newUser);
+                });
+    }
 }

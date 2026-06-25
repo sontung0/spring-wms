@@ -31,6 +31,11 @@ public class UserRepositoryAdapter implements UserRepository {
     }
 
     @Override
+    public java.util.Optional<User> findByEmail(String email) {
+        return jpaRepository.findByEmail(email).map(this::toDomain);
+    }
+
+    @Override
     public Page<User> search(UserFilter filter, Pageable pageable) {
         Specification<UserJpaEntity> spec = userSpecification.fromFilter(filter);
         return jpaRepository.findAll(spec, pageable).map(this::toDomain);

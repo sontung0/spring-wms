@@ -11,4 +11,5 @@ public interface UserService {
     Page<User> search(UserFilter filter, Pageable pageable);
     User update(Long id, User user);
     void deleteById(Long id);
+    User updateByEmail(String email, String name, String avatarUrl);
 }
