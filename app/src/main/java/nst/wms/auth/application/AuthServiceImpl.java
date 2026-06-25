@@ -60,7 +60,7 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userService.updateByEmail(authUser.getEmail(), authUser.getName(), authUser.getAvatarUrl());
 
-        userIdentityRepository.save(user.getId(), OAuthProviderCode.valueOf(storedProvider), authUser);
+        userIdentityRepository.save(user.getId(), OAuthProviderCode.valueOf(storedProvider.toUpperCase()), authUser);
 
         String wmsToken = tokenService.issue(user.getId());
         return new AuthCallbackResponse(wmsToken);

@@ -1,6 +1,8 @@
 package nst.wms.auth.domain;
 
-public class IdpExchangeException extends RuntimeException {
+import nst.wms.common.error.BusinessException;
+
+public class IdpExchangeException extends RuntimeException implements BusinessException {
 
     public IdpExchangeException(String message) {
         super(message);

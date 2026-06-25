@@ -1,6 +1,8 @@
 package nst.wms.auth.domain;
 
-public class UnknownProviderException extends RuntimeException {
+import nst.wms.common.error.BusinessException;
+
+public class UnknownProviderException extends RuntimeException implements BusinessException {
 
     public UnknownProviderException(String provider) {
         super("Unknown authentication provider: " + provider);
