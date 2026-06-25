@@ -6,15 +6,19 @@ public class User {
 
     private Long id;
     private String name;
+    private String email;
+    private String avatarUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     public User() {
     }
 
-    public User(Long id, String name, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public User(Long id, String name, String email, String avatarUrl, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.name = name;
+        this.email = email;
+        this.avatarUrl = avatarUrl;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -33,6 +37,22 @@ public class User {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 
     public LocalDateTime getCreatedAt() {

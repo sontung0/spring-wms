@@ -46,7 +46,7 @@ class UserServiceTest {
 
     @Test
     void findById_shouldReturnUserWhenFound() {
-        User user = new User(1L, "John", LocalDateTime.now(), LocalDateTime.now());
+        User user = new User(1L, "John", null, null, LocalDateTime.now(), LocalDateTime.now());
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         User result = userService.findById(1L);

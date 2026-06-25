@@ -50,12 +50,14 @@ public class UserRepositoryAdapter implements UserRepository {
         UserJpaEntity entity = new UserJpaEntity();
         entity.setId(user.getId());
         entity.setName(user.getName());
+        entity.setEmail(user.getEmail());
+        entity.setAvatarUrl(user.getAvatarUrl());
         entity.setCreatedAt(user.getCreatedAt());
         entity.setUpdatedAt(user.getUpdatedAt());
         return entity;
     }
 
     private User toDomain(UserJpaEntity entity) {
-        return new User(entity.getId(), entity.getName(), entity.getCreatedAt(), entity.getUpdatedAt());
+        return new User(entity.getId(), entity.getName(), entity.getEmail(), entity.getAvatarUrl(), entity.getCreatedAt(), entity.getUpdatedAt());
     }
 }

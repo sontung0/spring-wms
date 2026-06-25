@@ -14,6 +14,12 @@ public class UserJpaEntity {
     @Column(nullable = false, length = 255)
     private String name;
 
+    @Column(length = 255, unique = true)
+    private String email;
+
+    @Column(name = "avatar_url", length = 512)
+    private String avatarUrl;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -23,9 +29,11 @@ public class UserJpaEntity {
     public UserJpaEntity() {
     }
 
-    public UserJpaEntity(Long id, String name, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public UserJpaEntity(Long id, String name, String email, String avatarUrl, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.name = name;
+        this.email = email;
+        this.avatarUrl = avatarUrl;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -44,6 +52,22 @@ public class UserJpaEntity {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 
     public LocalDateTime getCreatedAt() {
