@@ -8,6 +8,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.client.RestClient;
 
 import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
@@ -41,6 +42,11 @@ public class SecurityConfig {
     public JwtDecoder jwtDecoder() {
         RSAPublicKey publicKey = parsePublicKey(publicKeyPem);
         return NimbusJwtDecoder.withPublicKey(publicKey).build();
+    }
+
+    @Bean
+    public RestClient.Builder restClientBuilder() {
+        return RestClient.builder();
     }
 
     private RSAPublicKey parsePublicKey(String pem) {
