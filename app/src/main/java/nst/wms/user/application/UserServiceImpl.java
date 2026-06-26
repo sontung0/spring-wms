@@ -1,8 +1,8 @@
 package nst.wms.user.application;
 
 import lombok.RequiredArgsConstructor;
+import nst.wms.common.error.NotFoundException;
 import nst.wms.user.domain.User;
-import nst.wms.user.domain.UserNotFoundException;
 import nst.wms.user.infrastructure.UserRepository;
 import nst.wms.user.presentation.dto.UserFilter;
 import org.springframework.data.domain.Page;
@@ -28,7 +28,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User findById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new UserNotFoundException(id));
+                .orElseThrow(() -> new NotFoundException(id));
     }
 
     @Override
@@ -47,7 +47,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteById(Long id) {
         if (!userRepository.existsById(id)) {
-            throw new UserNotFoundException(id);
+            throw new NotFoundException(id);
         }
         userRepository.deleteById(id);
     }

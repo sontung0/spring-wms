@@ -1,7 +1,7 @@
 package nst.wms.user.application;
 
+import nst.wms.common.error.NotFoundException;
 import nst.wms.user.domain.User;
-import nst.wms.user.domain.UserNotFoundException;
 import nst.wms.user.infrastructure.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,7 +58,7 @@ class UserServiceTest {
     void findById_shouldThrowWhenNotFound() {
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(UserNotFoundException.class, () -> userService.findById(99L));
+        assertThrows(NotFoundException.class, () -> userService.findById(99L));
     }
 
     @Test
@@ -74,6 +74,6 @@ class UserServiceTest {
     void deleteById_shouldThrowWhenNotFound() {
         when(userRepository.existsById(99L)).thenReturn(false);
 
-        assertThrows(UserNotFoundException.class, () -> userService.deleteById(99L));
+        assertThrows(NotFoundException.class, () -> userService.deleteById(99L));
     }
 }
