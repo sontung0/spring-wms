@@ -77,7 +77,7 @@ class UserApiTest {
     void getUserById_whenNotFound_shouldReturn404() throws Exception {
         mockMvc.perform(get("/api/users/999"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error").value("UserNotFound"));
+                .andExpect(jsonPath("$.error").value("NotFound"));
     }
 
     @Test

@@ -29,10 +29,4 @@ public class AuthExceptionHandler {
         ErrorResponse response = new ErrorResponse("UnknownProvider", ex.getMessage());
         return ResponseEntity.badRequest().body(response);
     }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
-        ErrorResponse response = new ErrorResponse("Unexpected", "An unexpected error occurred");
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
-    }
 }
