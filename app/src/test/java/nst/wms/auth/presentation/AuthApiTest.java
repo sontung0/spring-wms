@@ -1,6 +1,5 @@
 package nst.wms.auth.presentation;
 
-import nst.wms.auth.application.AuthService;
 import nst.wms.auth.application.TokenService;
 import nst.wms.auth.infrastructure.OAuthProviderRegistry;
 import nst.wms.auth.infrastructure.OAuthProviderProperties;
@@ -8,7 +7,6 @@ import nst.wms.auth.infrastructure.StateCache;
 import nst.wms.auth.infrastructure.OAuthProvider;
 import nst.wms.auth.infrastructure.OAuthTokens;
 import nst.wms.auth.domain.AuthUser;
-import nst.wms.auth.domain.OAuthProviderCode;
 import nst.wms.auth.infrastructure.UserIdentityRepository;
 import nst.wms.user.application.UserService;
 import nst.wms.user.application.UserUpdateData;
@@ -20,12 +18,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 import tools.jackson.databind.ObjectMapper;
 
-import java.time.LocalDateTime;
-
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;

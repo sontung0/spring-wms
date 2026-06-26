@@ -1,5 +1,6 @@
 package nst.wms.user.infrastructure;
 
+import lombok.RequiredArgsConstructor;
 import nst.wms.user.domain.User;
 import nst.wms.user.presentation.dto.UserFilter;
 import org.springframework.data.domain.Page;
@@ -8,15 +9,11 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class UserRepositoryAdapter implements UserRepository {
 
     private final UserJpaRepository jpaRepository;
     private final UserSpecification userSpecification;
-
-    public UserRepositoryAdapter(UserJpaRepository jpaRepository, UserSpecification userSpecification) {
-        this.jpaRepository = jpaRepository;
-        this.userSpecification = userSpecification;
-    }
 
     @Override
     public User save(User user) {

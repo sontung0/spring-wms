@@ -1,5 +1,6 @@
 package nst.wms.user.application;
 
+import lombok.RequiredArgsConstructor;
 import nst.wms.user.domain.User;
 import nst.wms.user.domain.UserNotFoundException;
 import nst.wms.user.infrastructure.UserRepository;
@@ -11,13 +12,10 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
 @Service
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
-
-    public UserServiceImpl(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
 
     @Override
     public User create(User user) {

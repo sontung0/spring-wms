@@ -1,5 +1,6 @@
 package nst.wms.auth.application;
 
+import lombok.RequiredArgsConstructor;
 import nst.wms.auth.domain.AuthUser;
 import nst.wms.auth.domain.InvalidStateException;
 import nst.wms.auth.domain.OAuthProviderCode;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final OAuthProviderRegistry providerRegistry;
@@ -20,21 +22,6 @@ public class AuthServiceImpl implements AuthService {
     private final TokenService tokenService;
     private final UserService userService;
     private final UserIdentityRepository userIdentityRepository;
-
-    public AuthServiceImpl(
-            OAuthProviderRegistry providerRegistry,
-            OAuthProviderProperties oAuthProviderProperties,
-            StateCache stateCache,
-            TokenService tokenService,
-            UserService userService,
-            UserIdentityRepository userIdentityRepository) {
-        this.providerRegistry = providerRegistry;
-        this.oAuthProviderProperties = oAuthProviderProperties;
-        this.stateCache = stateCache;
-        this.tokenService = tokenService;
-        this.userService = userService;
-        this.userIdentityRepository = userIdentityRepository;
-    }
 
     @Override
     public AuthorizeResponse authorize(String provider) {

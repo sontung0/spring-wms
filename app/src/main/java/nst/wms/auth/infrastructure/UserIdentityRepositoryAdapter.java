@@ -1,5 +1,6 @@
 package nst.wms.auth.infrastructure;
 
+import lombok.RequiredArgsConstructor;
 import nst.wms.auth.domain.AuthUser;
 import nst.wms.auth.domain.OAuthProviderCode;
 import org.springframework.stereotype.Component;
@@ -7,13 +8,10 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 
 @Component
+@RequiredArgsConstructor
 public class UserIdentityRepositoryAdapter implements UserIdentityRepository {
 
     private final UserIdentityJpaRepository jpaRepository;
-
-    public UserIdentityRepositoryAdapter(UserIdentityJpaRepository jpaRepository) {
-        this.jpaRepository = jpaRepository;
-    }
 
     @Override
     public void save(Long userId, OAuthProviderCode provider, AuthUser authUser) {

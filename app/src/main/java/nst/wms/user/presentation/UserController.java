@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import nst.wms.common.api.ErrorResponse;
 import nst.wms.user.application.UserService;
 import nst.wms.user.domain.User;
@@ -25,13 +26,10 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/users")
 @Tag(name = "Users", description = "User management operations")
+@RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;
-
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
 
     @PostMapping
     @Operation(summary = "Create a new user", description = "Creates a new user with the provided name")
