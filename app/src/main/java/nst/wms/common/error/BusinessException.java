@@ -10,4 +10,22 @@ package nst.wms.common.error;
  * with full stack traces by {@link GlobalExceptionLoggingResolver}.
  */
 public interface BusinessException {
+    
+    /**
+     * Returns the error code for this exception.
+     * 
+     * <p>Default implementation returns the simple class name without the "Exception" suffix.
+     * For example, {@code UserNotFoundException} returns {@code "UserNotFound"}.
+     * 
+     * <p>Exceptions can override this method to provide custom error codes.
+     * 
+     * @return the error code
+     */
+    default String getCode() {
+        String className = this.getClass().getSimpleName();
+        if (className.endsWith("Exception")) {
+            return className.substring(0, className.length() - "Exception".length());
+        }
+        return className;
+    }
 }
