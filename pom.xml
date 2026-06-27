@@ -18,6 +18,8 @@
 	</properties>
 	<modules>
 		<module>app</module>
+		<module>api</module>
+		<module>worker</module>
 		<module>e2e</module>
 	</modules>
 </project>

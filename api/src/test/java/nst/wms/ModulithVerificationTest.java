@@ -7,6 +7,6 @@ class ModulithVerificationTest {
 
     @Test
     void verifyModuleStructure() {
-        ApplicationModules.of(WmsApplication.class).verify();
+        ApplicationModules.of(ApiApplication.class).verify();
     }
 }

@@ -19,7 +19,7 @@
 		<!-- App JAR (plain artifact, not boot JAR) — @SpringBootTest classpath -->
 		<dependency>
 			<groupId>nst</groupId>
-			<artifactId>app</artifactId>
+			<artifactId>wms-api</artifactId>
 			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>

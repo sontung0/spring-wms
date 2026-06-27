@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class WmsApplication {
+public class ApiApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(WmsApplication.class, args);
+		SpringApplication.run(ApiApplication.class, args);
 	}
 
 }
