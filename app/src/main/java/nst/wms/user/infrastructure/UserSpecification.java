@@ -1,6 +1,6 @@
 package nst.wms.user.infrastructure;
 
-import nst.wms.user.presentation.dto.UserFilter;
+import nst.wms.user.domain.UserFilter;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 
@@ -10,8 +10,8 @@ public class UserSpecification {
     public Specification<UserJpaEntity> fromFilter(UserFilter filter) {
         Specification<UserJpaEntity> spec = (root, query, cb) -> null;
 
-        if (filter.getName() != null) {
-            spec = spec.and(hasName(filter.getName()));
+        if (filter.name != null) {
+            spec = spec.and(hasName(filter.name));
         }
 
         return spec;

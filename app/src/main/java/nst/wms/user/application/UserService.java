@@ -1,7 +1,7 @@
 package nst.wms.user.application;
 
 import nst.wms.user.domain.User;
-import nst.wms.user.presentation.dto.UserFilter;
+import nst.wms.user.domain.UserFilter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

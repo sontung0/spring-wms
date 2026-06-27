@@ -1,6 +1,6 @@
 package nst.wms.user.infrastructure;
 
-import nst.wms.user.presentation.dto.UserFilter;
+import nst.wms.user.domain.UserFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -13,7 +13,7 @@ class UserSpecificationTest {
     @Test
     void fromFilter_withName_shouldReturnMatchingSpec() {
         UserFilter filter = new UserFilter();
-        filter.setName("John");
+        filter.name = "John";
 
         Specification<UserJpaEntity> spec = userSpecification.fromFilter(filter);
 

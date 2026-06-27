@@ -60,7 +60,7 @@ public class UserController {
             @ApiResponse(responseCode = "200", description = "Users retrieved successfully")
     })
     public ResponseEntity<PageResponse<UserSummary>> search(
-            UserFilter filter,
+            @Valid UserFilter filter,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt,desc") String[] sort) {
@@ -74,7 +74,7 @@ public class UserController {
 
         Pageable pageable = PageRequest.of(page, size, sortObj);
 
-        Page<User> userPage = userService.search(filter, pageable);
+        Page<User> userPage = userService.search(filter.toDomain(), pageable);
 
         List<UserSummary> summaries = userPage.getContent().stream()
                 .map(u -> new UserSummary(u.getId(), u.getName()))
