@@ -14,7 +14,7 @@
 	<packaging>pom</packaging>
 	<name>wms</name>
 	<properties>
-		<java.version>26</java.version>
+		<java.version>25</java.version>
 	</properties>
 	<modules>
 		<module>app</module>

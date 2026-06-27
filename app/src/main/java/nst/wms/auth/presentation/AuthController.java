@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import nst.wms.auth.application.AuthService;
 import nst.wms.auth.presentation.dto.AuthorizeResponse;
@@ -59,7 +60,7 @@ public class AuthController {
             @ApiResponse(responseCode = "502", description = "Identity provider exchange error (IdP unreachable or returned error)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    public ResponseEntity<CallbackResponse> callback(@RequestBody CallbackRequest request) {
+    public ResponseEntity<CallbackResponse> callback(@Valid @RequestBody CallbackRequest request) {
         AuthService.AuthCallbackResponse result = authService.callback(
                 request.code(), request.state());
         return ResponseEntity.ok(new CallbackResponse(result.accessToken()));
