@@ -2,12 +2,14 @@ package nst.wms.user.application;
 
 import nst.wms.common.error.NotFoundException;
 import nst.wms.user.domain.User;
+import nst.wms.user.domain.events.UserCreatedEvent;
 import nst.wms.user.infrastructure.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -21,6 +23,9 @@ class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -42,6 +47,23 @@ class UserServiceTest {
         assertNotNull(result.getUpdatedAt());
         assertEquals("John", result.getName());
         verify(userRepository).save(user);
+    }
+
+    @Test
+    void create_shouldPublishUserCreatedEvent() {
+        User user = new User();
+        user.setName("Jane");
+
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User saved = invocation.getArgument(0);
+            saved.setId(2L);
+            return saved;
+        });
+
+        User result = userService.create(user);
+
+        assertNotNull(result.getId());
+        verify(eventPublisher).publishEvent(any(UserCreatedEvent.class));
     }
 
     @Test
