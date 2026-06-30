@@ -1,4 +1,4 @@
-package nst.wms.worker.config;
+package nst.wms.worker.common.config;
 
 import nst.wms.common.event.ExternalEvent;
 import org.springframework.context.annotation.Bean;

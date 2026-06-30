@@ -1,4 +1,4 @@
-package nst.wms.worker.config;
+package nst.wms.worker.notification.infrastructure;
 
 import nst.wms.user.domain.events.UserCreatedEvent;
 import nst.wms.user.domain.events.UserUpdatedEvent;
