@@ -4,10 +4,14 @@ import lombok.RequiredArgsConstructor;
 import nst.wms.common.error.NotFoundException;
 import nst.wms.user.domain.User;
 import nst.wms.user.domain.UserFilter;
+import nst.wms.user.domain.events.UserCreatedEvent;
+import nst.wms.user.domain.events.UserUpdatedEvent;
 import nst.wms.user.infrastructure.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -16,13 +20,17 @@ import java.time.LocalDateTime;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
+    @Transactional
     public User create(User user) {
         LocalDateTime now = LocalDateTime.now();
         user.setCreatedAt(now);
         user.setUpdatedAt(now);
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        eventPublisher.publishEvent(new UserCreatedEvent(saved));
+        return saved;
     }
 
     @Override
@@ -53,6 +61,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public User updateByEmail(String email, UserUpdateData data) {
         return userRepository.findByEmail(email)
                 .map(existing -> {
@@ -63,7 +72,9 @@ public class UserServiceImpl implements UserService {
                         existing.setAvatarUrl(data.avatarUrl);
                     }
                     existing.setUpdatedAt(LocalDateTime.now());
-                    return userRepository.save(existing);
+                    User saved = userRepository.save(existing);
+                    eventPublisher.publishEvent(new UserUpdatedEvent(saved));
+                    return saved;
                 })
                 .orElseGet(() -> {
                     User newUser = new User();
@@ -73,7 +84,9 @@ public class UserServiceImpl implements UserService {
                     LocalDateTime now = LocalDateTime.now();
                     newUser.setCreatedAt(now);
                     newUser.setUpdatedAt(now);
-                    return userRepository.save(newUser);
+                    User saved = userRepository.save(newUser);
+                    eventPublisher.publishEvent(new UserCreatedEvent(saved));
+                    return saved;
                 });
     }
 }
