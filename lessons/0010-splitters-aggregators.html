@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 10: Splitters and Aggregators</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Lesson 10: Splitters and Aggregators</h1>
+            <p class="mission-link">Mission: <a href="../MISSION.md">Master Spring Integration for spring-wms</a></p>
+        </header>
+
+        <main>
+            <section class="concept">
+                <h2>Divide and Conquer</h2>
+                <p>Often in integration, you receive a "batch" of data—like a file containing 100 inventory updates, or a JSON array of new orders. Processing the entire batch as a single unit can be inefficient or difficult, especially if some items fail while others succeed.</p>
+                <p>The <strong>Splitter</strong> pattern breaks a single message containing a collection into multiple individual messages. The <strong>Aggregator</strong> pattern does the exact opposite: it collects multiple related messages and combines them back into a single message.</p>
+            </section>
+
+            <section class="knowledge">
+                <h2>Using Splitters and Aggregators in Java DSL</h2>
+                
+                <h3>1. The Splitter (<code>.split()</code>)</h3>
+                <p>The <code>.split()</code> method is incredibly smart. If your message payload is a <code>List</code>, an array, or any <code>Iterable</code>, calling <code>.split()</code> without arguments will automatically create a new message for every item in that collection.</p>
+
+                <div class="code-block">
+<pre><code>@Bean
+public IntegrationFlow processBatchFlow() {
+    return IntegrationFlow.from("batchInputChannel")
+        // Payload is List&lt;Order&gt;. Splitter turns this into many Message&lt;Order&gt;
+        .split() 
+        // This handle method is now called once for EACH order
+        .handle(orderService, "processSingleOrder") 
+        .get();
+}</code></pre>
+                </div>
+                <p><em>Magic behind the scenes:</em> When a Splitter creates these individual messages, it automatically adds special headers to them: a <code>correlationId</code> (to group them together), a <code>sequenceSize</code> (total items), and a <code>sequenceNumber</code> (the item's index). These headers are crucial for the Aggregator.</p>
+
+                <h3>2. The Aggregator (<code>.aggregate()</code>)</h3>
+                <p>After splitting and processing items individually, you might want to send a single summary report. The <code>.aggregate()</code> method collects messages until a group is complete.</p>
+                <p>By default, it uses the headers added by the Splitter (<code>correlationId</code>, <code>sequenceSize</code>) to know exactly which messages belong together and when the group is fully assembled.</p>
+
+                <div class="code-block">
+<pre><code>@Bean
+public IntegrationFlow splitProcessAggregateFlow() {
+    return IntegrationFlow.from("batchInputChannel")
+        .split() // 1 Message (List of 5) -> 5 Messages
+        
+        // Process each item (could be done in parallel using an ExecutorChannel!)
+        .transform(order -> enrichOrderData(order)) 
+        
+        .aggregate() // 5 Messages -> 1 Message (List of 5 enriched orders)
+        
+        // Now we have a single List again, send the summary
+        .handle(reportService, "sendSummaryReport") 
+        .get();
+}</code></pre>
+                </div>
+            </section>
+
+            <section class="practice">
+                <h2>Skill Check</h2>
+                <div class="quiz">
+                    <p><strong>Scenario:</strong> In <code>spring-wms</code>, you receive a daily shipment manifest containing a list of 50 pallets. You need to validate each pallet individually against a database. Once all 50 are validated, you need to send a single email to the warehouse manager with the results.</p>
+                    <p><strong>Question:</strong> What sequence of Enterprise Integration Patterns should you use?</p>
+                    <ol type="A">
+                        <li>Router -> Service Activator -> Filter</li>
+                        <li>Splitter -> Service Activator -> Aggregator</li>
+                        <li>Transformer -> Splitter -> Router</li>
+                        <li>Aggregator -> Service Activator -> Splitter</li>
+                    </ol>
+                </div>
+            </section>
+
+            <section class="next-steps">
+                <h2>Next Steps</h2>
+                <p>What is the correct sequence for the scenario above?</p>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

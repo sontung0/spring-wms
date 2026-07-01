@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 9: Transformers</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Lesson 9: Transformers</h1>
+            <p class="mission-link">Mission: <a href="../MISSION.md">Master Spring Integration for spring-wms</a></p>
+        </header>
+
+        <main>
+            <section class="concept">
+                <h2>Changing the Message</h2>
+                <p>In integration flows, systems rarely speak the exact same language. System A might output a JSON string, but System B requires a Java Object. Or perhaps you receive an XML file and need to extract just one specific ID from it.</p>
+                <p>A <strong>Transformer</strong> is an endpoint responsible for converting a Message's content or structure and returning the modified Message. It is the translator of your integration flow.</p>
+            </section>
+
+            <section class="knowledge">
+                <h2>Using Transformers in Java DSL</h2>
+                <p>The Java DSL provides the <code>.transform()</code> method to apply transformations. You can use built-in transformers or write your own custom logic.</p>
+                
+                <h3>1. Custom Transformation (Lambdas)</h3>
+                <p>The most common and flexible way to transform a payload is using a simple lambda expression. Spring Integration automatically handles extracting the payload, passing it to your function, and wrapping the result back into a new Message.</p>
+
+                <div class="code-block">
+<pre><code>@Bean
+public IntegrationFlow transformFlow() {
+    return IntegrationFlow.from("inputChannel")
+        // Transform a String payload to uppercase
+        .transform((String payload) -> payload.toUpperCase())
+        
+        // Transform a String into a custom Object
+        .transform((String payload) -> new Order(payload))
+        
+        .handle(System.out::println)
+        .get();
+}</code></pre>
+                </div>
+
+                <h3>2. Built-in Transformers</h3>
+                <p>Spring Integration provides many built-in transformers for common tasks, especially when dealing with standard formats like JSON, XML, or Object Serialization. These are often accessed via factory classes like <code>Transformers</code>.</p>
+
+                <div class="code-block">
+<pre><code>import org.springframework.integration.dsl.Transformers;
+
+@Bean
+public IntegrationFlow jsonFlow() {
+    return IntegrationFlow.from("jsonInputChannel")
+        // Convert JSON String to a Java Object (requires Jackson on classpath)
+        .transform(Transformers.fromJson(Order.class))
+        .handle(orderService, "processOrder")
+        .get();
+}</code></pre>
+                </div>
+
+                <h3>3. Transforming Headers</h3>
+                <p>While <code>.transform()</code> is primarily for payloads, remember that we previously learned about <code>.enrichHeaders()</code>. Header enrichment is technically a form of transformation, specifically focused on the message metadata rather than the payload.</p>
+            </section>
+
+            <section class="practice">
+                <h2>Skill Check</h2>
+                <div class="quiz">
+                    <p><strong>Scenario:</strong> Your <code>spring-wms</code> receives an incoming message where the payload is a <code>byte[]</code> representing an image file. You need to convert this <code>byte[]</code> into a Base64 encoded <code>String</code> before sending it to an external API.</p>
+                    <p><strong>Question:</strong> Which DSL method is the most appropriate choice for this operation?</p>
+                    <ol type="A">
+                        <li><code>.filter()</code></li>
+                        <li><code>.transform()</code></li>
+                        <li><code>.route()</code></li>
+                        <li><code>.enrichHeaders()</code></li>
+                    </ol>
+                </div>
+            </section>
+
+            <section class="next-steps">
+                <h2>Next Steps</h2>
+                <p>What is the correct answer to the scenario above?</p>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 11: Channel Adapters (External Integrations)</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Lesson 11: Channel Adapters</h1>
+            <p class="mission-link">Mission: <a href="../MISSION.md">Master Spring Integration for spring-wms</a></p>
+        </header>
+
+        <main>
+            <section class="concept">
+                <h2>Connecting to the Outside World</h2>
+                <p>So far, we've been passing messages around inside our own application. But the true power of Spring Integration is connecting to external systems: reading files from a disk, listening to a RabbitMQ queue, polling a database, or sending an email.</p>
+                <p>We do this using <strong>Channel Adapters</strong>. They act as the bridge between the external world and your internal Spring Integration channels.</p>
+            </section>
+
+            <section class="knowledge">
+                <h2>Inbound vs. Outbound Adapters</h2>
+                
+                <h3>1. Inbound Channel Adapters (The Source)</h3>
+                <p>Inbound adapters bring data <em>into</em> your application. They are the starting point of an <code>IntegrationFlow</code>. There are two main types:</p>
+                <ul>
+                    <li><strong>Message-Driven (Event-Driven):</strong> The external system pushes data to us (e.g., listening to an AMQP queue or an HTTP endpoint).</li>
+                    <li><strong>Polling:</strong> We actively check the external system on a schedule (e.g., checking a directory for new files every 5 seconds).</li>
+                </ul>
+
+                <div class="code-block">
+<pre><code>import org.springframework.integration.file.dsl.Files;
+import java.io.File;
+
+@Bean
+public IntegrationFlow fileReadingFlow() {
+    // Polling Inbound Adapter: Checks the directory every 1 second
+    return IntegrationFlow.from(Files.inboundAdapter(new File("/tmp/wms/inbound"))
+                                     .patternFilter("*.csv"),
+                                e -> e.poller(Pollers.fixedDelay(1000)))
+        .transform(Transformers.fileToString())
+        .handle(System.out::println)
+        .get();
+}</code></pre>
+                </div>
+
+                <h3>2. Outbound Channel Adapters (The Destination)</h3>
+                <p>Outbound adapters send data <em>out</em> of your application. They are usually the end point of an <code>IntegrationFlow</code>. They take a Spring Integration Message and write it to a file, send it to a queue, execute a SQL insert, etc.</p>
+
+                <div class="code-block">
+<pre><code>@Bean
+public IntegrationFlow fileWritingFlow() {
+    return IntegrationFlow.from("outputChannel")
+        // Outbound Adapter: Writes the payload to a file
+        .handle(Files.outboundAdapter(new File("/tmp/wms/outbound"))
+                     .fileExistsMode(FileExistsMode.APPEND)
+                     .appendNewLine(true))
+        .get();
+}</code></pre>
+                </div>
+
+                <h3>3. The Factory Classes</h3>
+                <p>Notice how we used <code>Files.inboundAdapter()</code> and <code>Files.outboundAdapter()</code>? Spring Integration provides factory classes for almost every technology: <code>Amqp</code>, <code>Http</code>, <code>Jdbc</code>, <code>Mail</code>, <code>Ftp</code>, <code>Kafka</code>, etc. You just need to include the specific Spring Integration module dependency in your <code>pom.xml</code> (e.g., <code>spring-integration-file</code>).</p>
+            </section>
+
+            <section class="practice">
+                <h2>Skill Check</h2>
+                <div class="quiz">
+                    <p><strong>Scenario:</strong> You want your <code>spring-wms</code> application to expose a REST endpoint (e.g., <code>POST /api/inventory</code>). When a client sends a JSON payload to this endpoint, you want it to enter your Spring Integration flow for processing.</p>
+                    <p><strong>Question:</strong> What type of component should you use at the start of your <code>IntegrationFlow</code>?</p>
+                    <ol type="A">
+                        <li>An Outbound Channel Adapter</li>
+                        <li>A Polling Inbound Channel Adapter</li>
+                        <li>A Message-Driven Inbound Channel Adapter (specifically HTTP)</li>
+                        <li>A Service Activator</li>
+                    </ol>
+                </div>
+            </section>
+
+            <section class="next-steps">
+                <h2>Next Steps</h2>
+                <p>What is the correct answer to the scenario above?</p>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

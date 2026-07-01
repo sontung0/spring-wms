@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 12: Putting It All Together</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Lesson 12: Putting It All Together</h1>
+            <p class="mission-link">Mission: <a href="../MISSION.md">Master Spring Integration for spring-wms</a></p>
+        </header>
+
+        <main>
+            <section class="concept">
+                <h2>The Grand Finale</h2>
+                <p>You've learned the core components of Spring Integration: Channels, Endpoints, Gateways, Routers, Service Activators, Filters, Transformers, Splitters, Aggregators, and Channel Adapters. Now it's time to see how they all fit together to solve a real-world problem.</p>
+            </section>
+
+            <section class="knowledge">
+                <h2>A Complete Integration Flow</h2>
+                <p>Let's design a comprehensive flow for <code>spring-wms</code>. Here is the scenario:</p>
+                <ol>
+                    <li><strong>Inbound:</strong> We receive a batch of inventory updates via an HTTP POST request (JSON array).</li>
+                    <li><strong>Split:</strong> We split the batch into individual update messages.</li>
+                    <li><strong>Filter:</strong> We filter out any updates with a quantity of 0 (we don't care about empty stock).</li>
+                    <li><strong>Transform:</strong> We transform the JSON payload into a Java <code>InventoryUpdate</code> object.</li>
+                    <li><strong>Route:</strong> We route the updates based on the warehouse location (e.g., "North" vs. "South").</li>
+                    <li><strong>Process:</strong> We process the updates using a Service Activator (saving to the database).</li>
+                    <li><strong>Aggregate:</strong> We aggregate the results back together.</li>
+                    <li><strong>Outbound:</strong> We write a summary report to a file.</li>
+                </ol>
+
+                <div class="code-block">
+<pre><code>@Bean
+public IntegrationFlow inventoryUpdateFlow() {
+    return IntegrationFlow.from(Http.inboundGateway("/api/inventory")
+                                    .requestMapping(m -> m.methods(HttpMethod.POST)))
+        
+        // 1. Split the JSON array into individual JSON objects
+        .split() 
+        
+        // 2. Filter out items with quantity 0 (assuming JSON string manipulation or JsonPath)
+        .filter(String.class, json -> !json.contains("\"quantity\":0")) 
+        
+        // 3. Transform JSON to Java Object
+        .transform(Transformers.fromJson(InventoryUpdate.class)) 
+        
+        // 4. Route based on warehouse location
+        .&lt;InventoryUpdate, String&gt;route(update -> update.getWarehouse(), mapping -> mapping
+            .subFlowMapping("North", sf -> sf.handle(inventoryService, "updateNorth"))
+            .subFlowMapping("South", sf -> sf.handle(inventoryService, "updateSouth"))
+        )
+        
+        // 5. Aggregate the results
+        .aggregate() 
+        
+        // 6. Transform the aggregated list into a String report
+        .transform(list -> "Processed " + list.size() + " updates.") 
+        
+        // 7. Write the report to a file
+        .handle(Files.outboundAdapter(new File("/tmp/wms/reports"))
+                     .fileExistsMode(FileExistsMode.APPEND)
+                     .appendNewLine(true))
+        .get();
+}</code></pre>
+                </div>
+                <p><em>Note:</em> In a real application, you'd likely use an <code>errorChannel</code> to handle failures during this complex process, as we learned in Lesson 8.</p>
+            </section>
+
+            <section class="practice">
+                <h2>Skill Check</h2>
+                <div class="quiz">
+                    <p><strong>Scenario:</strong> You've built the flow above. It works perfectly. However, your manager asks you to add a new requirement: before writing the summary report to the file, you also need to send an email notification to the warehouse manager with the exact same summary report.</p>
+                    <p><strong>Question:</strong> Which Enterprise Integration Pattern should you insert right before the final Outbound File Adapter to achieve this?</p>
+                    <ol type="A">
+                        <li>A Router</li>
+                        <li>A Publish-Subscribe Channel</li>
+                        <li>A Splitter</li>
+                        <li>A Filter</li>
+                    </ol>
+                </div>
+            </section>
+
+            <section class="next-steps">
+                <h2>Next Steps</h2>
+                <p>What is the correct answer to the scenario above?</p>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

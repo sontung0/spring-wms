@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 8: Error Handling in Spring Integration</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Lesson 8: Error Handling</h1>
+            <p class="mission-link">Mission: <a href="../MISSION.md">Master Spring Integration for spring-wms</a></p>
+        </header>
+
+        <main>
+            <section class="concept">
+                <h2>The Challenge of Async Errors</h2>
+                <p>In standard synchronous Java, if a method throws an exception, you catch it with a <code>try/catch</code> block. But in Spring Integration, messages often move asynchronously across threads or even different systems. If a Service Activator throws an exception on a background thread, your original calling code is long gone. How do you catch it?</p>
+                <p>Spring Integration solves this using the <strong>Error Channel</strong> pattern.</p>
+            </section>
+
+            <section class="knowledge">
+                <h2>The ErrorMessage and errorChannel</h2>
+                <p>When an exception occurs during message processing, Spring Integration catches it, wraps the original message and the exception into an <code>ErrorMessage</code>, and sends it to a designated error channel.</p>
+                
+                <h3>1. The Global errorChannel</h3>
+                <p>By default, Spring Integration provides a global publish-subscribe channel named exactly <code>errorChannel</code>. If an exception is thrown in an asynchronous flow (like after a <code>QueueChannel</code> or a <code>TaskExecutor</code>), the framework automatically routes the error here.</p>
+
+                <h3>2. Gateway Error Channels</h3>
+                <p>When using a <code>@MessagingGateway</code>, you can specify an error channel specifically for that entry point. This allows you to handle errors differently depending on where the message originated.</p>
+
+                <div class="code-block">
+<pre><code>@MessagingGateway(
+    defaultRequestChannel = "inputChannel",
+    errorChannel = "myCustomErrorChannel" // Route errors here
+)
+public interface MyGateway {
+    void process(String payload);
+}</code></pre>
+                </div>
+
+                <h3>3. Handling the Error</h3>
+                <p>You handle errors just like any other message! You create an <code>IntegrationFlow</code> that listens to the error channel. The payload of the message will be a <code>MessagingException</code>, which contains both the <code>cause</code> (the actual exception) and the <code>failedMessage</code>.</p>
+
+                <div class="code-block">
+<pre><code>@Bean
+public IntegrationFlow errorHandlerFlow() {
+    return IntegrationFlow.from("myCustomErrorChannel")
+        .handle(message -> {
+            MessagingException exception = (MessagingException) message.getPayload();
+            System.err.println("Flow failed! Error: " + exception.getCause().getMessage());
+            System.err.println("Failed message payload: " + exception.getFailedMessage().getPayload());
+            // You could also send an alert, save to a dead-letter queue, etc.
+        })
+        .get();
+}</code></pre>
+                </div>
+            </section>
+
+            <section class="practice">
+                <h2>Skill Check</h2>
+                <div class="quiz">
+                    <p><strong>Scenario:</strong> You have a flow that reads files from a directory and processes them asynchronously. If the processing fails (e.g., invalid file format), you want to move the file to a "failed" directory and send an email alert.</p>
+                    <p><strong>Question:</strong> How should you capture the exception to trigger this failure logic?</p>
+                    <ol type="A">
+                        <li>Wrap the <code>.handle()</code> method in a standard Java <code>try/catch</code> block within the DSL definition.</li>
+                        <li>Configure an <code>errorChannel</code> on the flow's entry point and create a separate <code>IntegrationFlow</code> that reads from that channel to perform the failure logic.</li>
+                        <li>Use the <code>.filter()</code> method to check if the payload is an Exception.</li>
+                    </ol>
+                </div>
+            </section>
+
+            <section class="next-steps">
+                <h2>Next Steps</h2>
+                <p>Think about the quiz question above. What is the correct approach? Let me know your answer!</p>
+                <p><em>Remember: You can always ask me questions if anything is unclear.</em></p>
+            </section>
+        </main>
+    </div>
+</body>
+</html>
