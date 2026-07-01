@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 4: Routing Messages</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+    <h1>Lesson 4: Routing Messages</h1>
+    
+    <p>Awesome job getting the first flow running! So far, our flow is completely linear: Message goes in, gets transformed, gets printed.</p>
+
+    <p>But in a real system (like a Warehouse Management System), you often need to make decisions. For example: If an order is for "Electronics", send it to warehouse A; if it's for "Clothing", send it to warehouse B.</p>
+
+    <p>This is where the <strong>Router</strong> comes in.</p>
+
+    <h2>The Message Router</h2>
+    
+    <p>A Router consumes a message from an input channel and determines which output channel(s) it should be sent to. It doesn't modify the message; it just directs traffic.</p>
+
+    <h2>Routing with Java DSL</h2>
+    
+    <p>The DSL makes routing very intuitive using the <code>route()</code> method. You usually route based on the payload (the data) or the message headers.</p>
+
+    <pre><code>import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.integration.dsl.IntegrationFlow;
+
+@Configuration
+public class RoutingFlowConfig {
+
+    @Bean
+    public IntegrationFlow orderRoutingFlow() {
+        return IntegrationFlow.from("orderChannel")
+            // Route based on the payload (assuming payload is a String like "ELECTRONICS" or "CLOTHING")
+            .&lt;String, String&gt;route(payload -> payload, mapping -> mapping
+                .channelMapping("ELECTRONICS", "electronicsChannel")
+                .channelMapping("CLOTHING", "clothingChannel")
+                // What happens if we get "FOOD"? We need a default!
+                .defaultOutputToParentFlow() 
+            )
+            .get();
+    }
+    
+    // We can define separate sub-flows for the routed channels!
+    @Bean
+    public IntegrationFlow electronicsFlow() {
+        return IntegrationFlow.from("electronicsChannel")
+            .handle(m -> System.out.println("Processing Electronics Order: " + m.getPayload()))
+            .get();
+    }
+
+    @Bean
+    public IntegrationFlow clothingFlow() {
+        return IntegrationFlow.from("clothingChannel")
+            .handle(m -> System.out.println("Processing Clothing Order: " + m.getPayload()))
+            .get();
+    }
+}</code></pre>
+
+    <h2>Anatomy of the <code>route()</code> definition</h2>
+    <ol>
+        <li><code>.&lt;String, String&gt;route(payload -> payload...)</code>: We are saying the payload is a String, and the value we want to use to make our routing decision is the payload itself. If you had an `Order` object, it might be `order -> order.getCategory()`.</li>
+        <li><code>mapping -> mapping.channelMapping(...)</code>: This is where we map the result of our routing function to a specific channel name.</li>
+    </ol>
+
+
+    <hr>
+
+    <div class="quiz-container">
+        <div class="quiz-question">In the code above, what happens if the payload is the String "FOOD" and we haven't mapped it?</div>
+        <ul class="quiz-options">
+            <li class="quiz-option"><button onclick="checkAnswer(this, false)">The message is silently dropped.</button></li>
+            <li class="quiz-option"><button onclick="checkAnswer(this, false)">An exception is thrown immediately.</button></li>
+            <li class="quiz-option"><button onclick="checkAnswer(this, true)">Because of <code>.defaultOutputToParentFlow()</code>, it continues to whatever endpoint is defined after the router in the main flow (or ends if there is none).</button></li>
+        </ul>
+        <div id="quiz-feedback" class="quiz-feedback"></div>
+    </div>
+
+    <div class="footer">
+        <p><strong>Next steps:</strong> Read the lesson, try the quiz. Then, let's update your Java code to implement this router!</p>
+        <p><a href="https://docs.spring.io/spring-integration/reference/router.html" target="_blank">Primary Source: Spring Integration Reference (Routers)</a></p>
+    </div>
+
+    <script>
+        function checkAnswer(button, isCorrect) {
+            const feedback = document.getElementById('quiz-feedback');
+            feedback.style.display = 'block';
+            
+            document.querySelectorAll('.quiz-option button').forEach(btn => {
+                btn.style.backgroundColor = '#f8f9fa';
+                btn.style.borderColor = '#dee2e6';
+            });
+
+            if (isCorrect) {
+                button.style.backgroundColor = '#d4edda';
+                button.style.borderColor = '#c3e6cb';
+                feedback.className = 'quiz-feedback feedback-correct';
+                feedback.innerHTML = '<strong>Correct!</strong> <code>defaultOutputToParentFlow()</code> is crucial for handling unmapped cases gracefully. Without it, Spring Integration usually throws a `MessageDeliveryException` if it can\'t find a route.';
+            } else {
+                button.style.backgroundColor = '#f8d7da';
+                button.style.borderColor = '#f5c6cb';
+                feedback.className = 'quiz-feedback feedback-incorrect';
+                feedback.innerHTML = '<strong>Incorrect.</strong> Try again. Look closely at the configuration within the `mapping` block.';
+            }
+        }
+    </script>
+</body>
+</html>

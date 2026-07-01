@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 2: Hello World with Java DSL</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+    <h1>Lesson 2: Hello World with Java DSL</h1>
+    
+    <p>Since you are comfortable with basic Spring concepts, we are going to skip the legacy XML configuration and jump straight into the modern way to build Spring Integration applications: the <strong>Java DSL (Domain Specific Language)</strong>.</p>
+
+    <p>The Java DSL allows you to build complex integration flows using a fluent builder API within a standard Spring <code>@Configuration</code> class.</p>
+
+    <h2>The IntegrationFlow</h2>
+    
+    <p>The core interface you'll use is <code>IntegrationFlow</code>. You declare it as a Spring Bean. Let's look at a simple example that takes a string, converts it to uppercase, and prints it.</p>
+
+    <pre><code>import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.integration.dsl.IntegrationFlow;
+
+@Configuration
+public class BasicFlowConfig {
+
+    @Bean
+    public IntegrationFlow helloWorldFlow() {
+        return IntegrationFlow
+                // 1. Declare the input channel
+                .from("helloChannel") 
+                
+                // 2. Add an Endpoint (a Transformer in this case)
+                .&lt;String, String&gt;transform(String::toUpperCase) 
+                
+                // 3. Add an Endpoint (a Service Activator to print)
+                .handle(message -> System.out.println("Result: " + message.getPayload())) 
+                
+                // 4. Build the flow
+                .get(); 
+    }
+}</code></pre>
+
+    <h2>What is happening here?</h2>
+    <ol>
+        <li><code>from("helloChannel")</code>: We tell the flow to listen to a channel named "helloChannel". Spring Integration will automatically create a <code>DirectChannel</code> bean with this name for you if it doesn't exist.</li>
+        <li><code>transform(...)</code>: This is an <strong>Endpoint</strong>. It takes the message payload off the channel, applies a function (converting to uppercase), and implicitly puts the new message onto a hidden, automatically generated channel to pass to the next step.</li>
+        <li><code>handle(...)</code>: This is the final <strong>Endpoint</strong> (a Service Activator). It consumes the message and performs an action (printing it). Because it doesn't return anything, the flow ends here.</li>
+        <li><code>get()</code>: Finalizes the builder and returns the <code>IntegrationFlow</code> object.</li>
+    </ol>
+
+    <div class="note">
+        <strong>Implicit Channels:</strong> Notice we only explicitly named the input channel. The DSL automatically wires up hidden channels between <code>transform()</code> and <code>handle()</code>. You only need to explicitly name channels when you want to reference them from outside the flow.
+    </div>
+
+    <hr>
+
+    <div class="quiz-container">
+        <div class="quiz-question">In the Java DSL example above, how does the message get from the <code>transform</code> step to the <code>handle</code> step?</div>
+        <ul class="quiz-options">
+            <li class="quiz-option"><button onclick="checkAnswer(this, false)">We must define a channel named "transformOutput" and pass it in.</button></li>
+            <li class="quiz-option"><button onclick="checkAnswer(this, true)">The DSL automatically creates an implicit channel between them.</button></li>
+            <li class="quiz-option"><button onclick="checkAnswer(this, false)">Transformers don't use channels; they pass data directly to handlers via method calls.</button></li>
+        </ul>
+        <div id="quiz-feedback" class="quiz-feedback"></div>
+    </div>
+
+    <div class="footer">
+        <p><strong>Next steps:</strong> Read this lesson, try the quiz, and let me know when you are ready. For the next step, we'll actually run this code in a terminal to see it in action.</p>
+        <p><a href="https://docs.spring.io/spring-integration/reference/dsl.html" target="_blank">Primary Source: Spring Integration Reference (Java DSL)</a></p>
+    </div>
+
+    <script>
+        function checkAnswer(button, isCorrect) {
+            const feedback = document.getElementById('quiz-feedback');
+            feedback.style.display = 'block';
+            
+            document.querySelectorAll('.quiz-option button').forEach(btn => {
+                btn.style.backgroundColor = '#f8f9fa';
+                btn.style.borderColor = '#dee2e6';
+            });
+
+            if (isCorrect) {
+                button.style.backgroundColor = '#d4edda';
+                button.style.borderColor = '#c3e6cb';
+                feedback.className = 'quiz-feedback feedback-correct';
+                feedback.innerHTML = '<strong>Correct!</strong> The Java DSL significantly reduces boilerplate by automatically generating and wiring intermediate channels between endpoints.';
+            } else {
+                button.style.backgroundColor = '#f8d7da';
+                button.style.borderColor = '#f5c6cb';
+                feedback.className = 'quiz-feedback feedback-incorrect';
+                feedback.innerHTML = '<strong>Incorrect.</strong> Try again. Remember one of the main benefits of using the fluent builder API (DSL).';
+            }
+        }
+    </script>
+</body>
+</html>

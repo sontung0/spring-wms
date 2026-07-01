@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 7: Message Filters</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+    <h1>Lesson 7: Message Filters</h1>
+    
+    <p>We know how to transform, route, and enrich messages. But what if a message shouldn't be processed at all? What if it's invalid, expired, or doesn't meet a specific business requirement?</p>
+
+    <p>This is where the <strong>Message Filter</strong> pattern comes in.</p>
+
+    <h2>The Role of a Filter</h2>
+    
+    <p>A Filter evaluates a message against a boolean condition. If the condition is <code>true</code>, the message is passed to the next channel. If the condition is <code>false</code>, the message is dropped (or optionally routed to a "discard" channel).</p>
+
+    <h2>Filters in Java DSL</h2>
+    
+    <p>In the DSL, you use the <code>.filter()</code> method. Just like routers, you can filter based on the payload or the headers.</p>
+
+    <pre><code>@Bean
+public IntegrationFlow orderFlow() {
+    return IntegrationFlow.from("newOrderChannel")
+    
+        // 1. Simple Filter: Only allow orders with a valid ID
+        .&lt;Order&gt;filter(order -> order.getId() != null && !order.getId().isEmpty())
+        
+        // 2. Filter with a discard channel
+        .&lt;Order&gt;filter(order -> order.getQuantity() > 0, 
+            filterEndpointSpec -> filterEndpointSpec
+                .discardChannel("invalidOrdersChannel")
+        )
+        
+        // ... continue to routing ...
+        .get();
+}</code></pre>
+
+    <h2>Why not just use a Router?</h2>
+    
+    <p>You <em>could</em> write a Router that sends invalid messages to a null channel. However, conceptually, a Router is about "Where does this go?", while a Filter is about "Should this continue?". Using a Filter makes your intent much clearer to other developers reading your integration flow.</p>
+
+    <hr>
+
+    <div class="quiz-container">
+        <div class="quiz-question">If a message fails a filter's condition and no <code>discardChannel</code> is configured, what happens to the message?</div>
+        <ul class="quiz-options">
+            <li class="quiz-option"><button onclick="checkAnswer(this, false)">It is sent back to the Gateway.</button></li>
+            <li class="quiz-option"><button onclick="checkAnswer(this, true)">It is silently dropped (discarded) and processing ends for that message.</button></li>
+            <li class="quiz-option"><button onclick="checkAnswer(this, false)">A MessageRejectedException is thrown.</button></li>
+        </ul>
+        <div id="quiz-feedback" class="quiz-feedback"></div>
+    </div>
+
+    <div class="footer">
+        <p><strong>Next steps:</strong> Read this lesson. I will update the code to add a filter that prevents orders with a quantity of 0 or less from entering the routing logic.</p>
+        <p><a href="https://docs.spring.io/spring-integration/reference/filter.html" target="_blank">Primary Source: Spring Integration Reference (Filters)</a></p>
+    </div>
+
+    <script>
+        function checkAnswer(button, isCorrect) {
+            const feedback = document.getElementById('quiz-feedback');
+            feedback.style.display = 'block';
+            
+            document.querySelectorAll('.quiz-option button').forEach(btn => {
+                btn.style.backgroundColor = '#f8f9fa';
+                btn.style.borderColor = '#dee2e6';
+            });
+
+            if (isCorrect) {
+                button.style.backgroundColor = '#d4edda';
+                button.style.borderColor = '#c3e6cb';
+                feedback.className = 'quiz-feedback feedback-correct';
+                feedback.innerHTML = '<strong>Correct!</strong> By default, filters silently drop messages that evaluate to false. If you want to audit or handle bad messages, you must specify a discard channel.';
+            } else {
+                button.style.backgroundColor = '#f8d7da';
+                button.style.borderColor = '#f5c6cb';
+                feedback.className = 'quiz-feedback feedback-incorrect';
+                feedback.innerHTML = '<strong>Incorrect.</strong> Try again. What is the standard behavior of a filter in a pipeline?';
+            }
+        }
+    </script>
+</body>
+</html>

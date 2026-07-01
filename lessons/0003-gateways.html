@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 3: Gateways (Sending Messages into the Flow)</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+    <h1>Lesson 3: Gateways</h1>
+    
+    <p>In the previous lesson, we defined a flow that starts from a channel named <code>"helloChannel"</code>. But how do we actually put a message onto that channel from our regular Java code (like a REST Controller or a Service)?</p>
+
+    <p>While you <em>could</em> inject a <code>MessageChannel</code> bean and call <code>channel.send(new GenericMessage<>("hello"))</code>, Spring Integration provides a much cleaner, more decoupled pattern: <strong>The Messaging Gateway</strong>.</p>
+
+    <h2>The @MessagingGateway Interface</h2>
+    
+    <p>A Gateway hides the messaging API from your application code. You define a plain Java interface, and Spring generates a proxy implementation for it at runtime.</p>
+
+    <pre><code>import org.springframework.integration.annotation.MessagingGateway;
+
+@MessagingGateway(defaultRequestChannel = "helloChannel")
+public interface MyGateway {
+    
+    // When you call this method, Spring will take the String "data", 
+    // wrap it in a Message, and send it to "helloChannel"
+    void sendToFlow(String data);
+}</code></pre>
+
+    <h2>Why is this awesome?</h2>
+    <ul>
+        <li><strong>Decoupling:</strong> The rest of your application just calls a standard Java method on an interface. It has <em>zero</em> dependency on Spring Integration classes like <code>Message</code> or <code>MessageChannel</code>.</li>
+        <li><strong>Ease of Testing:</strong> You can easily mock this interface in your unit tests.</li>
+    </ul>
+
+    <h2>Putting it together</h2>
+    <p>Now, in your business logic, you just inject the interface and call it:</p>
+
+    <pre><code>import org.springframework.stereotype.Service;
+
+@Service
+public class MyBusinessService {
+
+    private final MyGateway myGateway;
+
+    public MyBusinessService(MyGateway myGateway) {
+        this.myGateway = myGateway;
+    }
+
+    public void processData() {
+        // This looks like a normal method call, but it's actually 
+        // publishing a message to the Spring Integration flow!
+        myGateway.sendToFlow("hello spring integration");
+    }
+}</code></pre>
+
+
+    <hr>
+
+    <div class="quiz-container">
+        <div class="quiz-question">What is the primary benefit of using a <code>@MessagingGateway</code> interface?</div>
+        <ul class="quiz-options">
+            <li class="quiz-option"><button onclick="checkAnswer(this, false)">It makes message routing significantly faster.</button></li>
+            <li class="quiz-option"><button onclick="checkAnswer(this, true)">It hides the messaging API, keeping application code decoupled from Spring Integration specific classes.</button></li>
+            <li class="quiz-option"><button onclick="checkAnswer(this, false)">It automatically converts XML payloads to JSON.</button></li>
+        </ul>
+        <div id="quiz-feedback" class="quiz-feedback"></div>
+    </div>
+
+    <div class="footer">
+        <p><strong>Next steps:</strong> I am going to set up a small, runnable Spring Boot application in this directory so we can run this code together.</p>
+        <p><a href="https://docs.spring.io/spring-integration/reference/gateway.html" target="_blank">Primary Source: Spring Integration Reference (Messaging Gateways)</a></p>
+    </div>
+
+    <script>
+        function checkAnswer(button, isCorrect) {
+            const feedback = document.getElementById('quiz-feedback');
+            feedback.style.display = 'block';
+            
+            document.querySelectorAll('.quiz-option button').forEach(btn => {
+                btn.style.backgroundColor = '#f8f9fa';
+                btn.style.borderColor = '#dee2e6';
+            });
+
+            if (isCorrect) {
+                button.style.backgroundColor = '#d4edda';
+                button.style.borderColor = '#c3e6cb';
+                feedback.className = 'quiz-feedback feedback-correct';
+                feedback.innerHTML = '<strong>Correct!</strong> Gateways allow your business logic to remain completely agnostic to the messaging infrastructure.';
+            } else {
+                button.style.backgroundColor = '#f8d7da';
+                button.style.borderColor = '#f5c6cb';
+                feedback.className = 'quiz-feedback feedback-incorrect';
+                feedback.innerHTML = '<strong>Incorrect.</strong> Try again. Think about how the code in `MyBusinessService` looks compared to manually building `Message` objects.';
+            }
+        }
+    </script>
+</body>
+</html>

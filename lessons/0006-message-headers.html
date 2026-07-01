@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 6: Message Headers</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+    <h1>Lesson 6: Message Headers</h1>
+    
+    <p>We've successfully routed and processed the <strong>Payload</strong> (the <code>Order</code> object). But remember Lesson 1? A Message consists of a Payload <em>and</em> <strong>Headers</strong>.</p>
+
+    <p>Headers are metadata (key-value pairs) attached to the message. Why are they useful?</p>
+    <ul>
+        <li><strong>Routing:</strong> You can route based on a header (e.g., <code>"Priority": "HIGH"</code>) instead of having to inspect the payload.</li>
+        <li><strong>Tracking:</strong> Adding a correlation ID or timestamp as the message moves through the system.</li>
+        <li><strong>Clean Domain Models:</strong> You might need data for the integration flow (like a specific target database schema) that doesn't belong inside your pure <code>Order</code> POJO. Headers keep your POJOs clean.</li>
+    </ul>
+
+    <h2>Adding Headers (Header Enricher)</h2>
+    
+    <p>You add or modify headers using a <strong>Header Enricher</strong>. In the Java DSL, you use the <code>.enrichHeaders()</code> method.</p>
+
+    <pre><code>@Bean
+public IntegrationFlow orderFlow(OrderService service) {
+    return IntegrationFlow.from("newOrderChannel")
+        // Add a static header
+        .enrichHeaders(h -> h.header("sourceSystem", "WEB_API"))
+        
+        // Add a dynamic header based on the payload
+        .enrichHeaders(h -> h.headerFunction("isLargeOrder", 
+            message -> {
+                Order order = (Order) message.getPayload();
+                return order.getQuantity() > 100;
+            }))
+            
+        .handle(service, "process")
+        .get();
+}</code></pre>
+
+    <h2>Reading Headers in your Service</h2>
+
+    <p>How does your Service Activator access these headers if it only takes the <code>Order</code> as an argument? You use the standard Spring Messaging <code>@Header</code> annotation!</p>
+
+    <pre><code>@Service
+public class OrderService {
+    
+    // Spring extracts both the payload AND the specific header for you!
+    public void process(Order order, @Header("isLargeOrder") boolean large) {
+        if (large) {
+            System.out.println("Processing LARGE order...");
+        } else {
+            System.out.println("Processing normal order...");
+        }
+    }
+}</code></pre>
+
+
+    <hr>
+
+    <div class="quiz-container">
+        <div class="quiz-question">Why might you choose to put routing information (like "destination_warehouse") in a Message Header rather than directly inside the <code>Order</code> object?</div>
+        <ul class="quiz-options">
+            <li class="quiz-option"><button onclick="checkAnswer(this, false)">Because headers are processed much faster by the framework than payloads.</button></li>
+            <li class="quiz-option"><button onclick="checkAnswer(this, true)">To keep the domain model (Order) clean and decoupled from messaging/routing infrastructure concerns.</button></li>
+            <li class="quiz-option"><button onclick="checkAnswer(this, false)">Because the Router component cannot access the payload of a message.</button></li>
+        </ul>
+        <div id="quiz-feedback" class="quiz-feedback"></div>
+    </div>
+
+    <div class="footer">
+        <p><strong>Next steps:</strong> Read this lesson and try the quiz. I will update the workspace to add a "Priority" header to our flow.</p>
+        <p><a href="https://docs.spring.io/spring-integration/reference/message.html#messageheaderaccessor" target="_blank">Primary Source: Spring Integration Reference (Message Headers)</a></p>
+    </div>
+
+    <script>
+        function checkAnswer(button, isCorrect) {
+            const feedback = document.getElementById('quiz-feedback');
+            feedback.style.display = 'block';
+            
+            document.querySelectorAll('.quiz-option button').forEach(btn => {
+                btn.style.backgroundColor = '#f8f9fa';
+                btn.style.borderColor = '#dee2e6';
+            });
+
+            if (isCorrect) {
+                button.style.backgroundColor = '#d4edda';
+                button.style.borderColor = '#c3e6cb';
+                feedback.className = 'quiz-feedback feedback-correct';
+                feedback.innerHTML = '<strong>Correct!</strong> Keeping infrastructure/routing details out of your core business objects is a key principle of clean architecture.';
+            } else {
+                button.style.backgroundColor = '#f8d7da';
+                button.style.borderColor = '#f5c6cb';
+                feedback.className = 'quiz-feedback feedback-incorrect';
+                feedback.innerHTML = '<strong>Incorrect.</strong> Try again. Think about separation of concerns and keeping your business logic pure.';
+            }
+        }
+    </script>
+</body>
+</html>

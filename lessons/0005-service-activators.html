@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 5: Service Activators and POJOs</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+    <h1>Lesson 5: Service Activators and POJOs</h1>
+    
+    <p>Up until now, our flow has only processed <code>String</code> objects, and we've written our logic right inside the configuration class using lambdas: <code>.handle(m -> ...)</code>.</p>
+
+    <p>This is fine for simple examples, but in a real WMS application, you have Domain Objects (POJOs like <code>Order</code>, <code>InventoryItem</code>) and you want to delegate the actual work to existing Spring <code>@Service</code> beans.</p>
+
+    <h2>The Service Activator</h2>
+    
+    <p>A <strong>Service Activator</strong> is the endpoint type that connects a Message Channel to a specific method on a Spring Bean. It takes the payload of the incoming message, passes it as an argument to your service method, and if your method returns something, it wraps that result in a new message and sends it to the next channel.</p>
+
+    <h2>Connecting the DSL to your Services</h2>
+
+    <p>Instead of passing a lambda to <code>.handle()</code>, we pass a reference to a Spring Bean and the name of the method we want to invoke.</p>
+
+    <pre><code>// 1. You have a standard Spring Service
+@Service
+public class InventoryService {
+    public void checkStock(Order order) {
+        System.out.println("Checking stock for order: " + order.getId());
+    }
+}
+
+// ...
+
+// 2. In your IntegrationFlow
+@Bean
+public IntegrationFlow orderFlow(InventoryService inventoryService) {
+    return IntegrationFlow.from("newOrderChannel")
+        // The DSL will automatically extract the Order payload and pass it to checkStock
+        .handle(inventoryService, "checkStock") 
+        .get();
+}</code></pre>
+
+    <div class="note">
+        <strong>Magic Payload Extraction:</strong> You do <em>not</em> need to change your <code>InventoryService</code> to accept a Spring Integration <code>Message&lt;Order&gt;</code>. Spring is smart enough to extract the <code>Order</code> payload from the message and pass it to your method automatically. This keeps your business logic 100% decoupled from the messaging framework.
+    </div>
+
+    <hr>
+
+    <div class="quiz-container">
+        <div class="quiz-question">If your Service Activator method returns an object (e.g., <code>public Receipt process(Order order)</code>), what happens to that object?</div>
+        <ul class="quiz-options">
+            <li class="quiz-option"><button onclick="checkAnswer(this, false)">It is ignored, as Service Activators must be void.</button></li>
+            <li class="quiz-option"><button onclick="checkAnswer(this, true)">Spring Integration automatically wraps the returned <code>Receipt</code> in a new Message and sends it to the next channel in the flow.</button></li>
+            <li class="quiz-option"><button onclick="checkAnswer(this, false)">It is returned directly back to the Gateway caller immediately, bypassing the rest of the flow.</button></li>
+        </ul>
+        <div id="quiz-feedback" class="quiz-feedback"></div>
+    </div>
+
+    <div class="footer">
+        <p><strong>Next steps:</strong> After reading this, we will update the workspace to use a real <code>Order</code> object and a dedicated <code>OrderFulfillmentService</code>.</p>
+        <p><a href="https://docs.spring.io/spring-integration/reference/service-activator.html" target="_blank">Primary Source: Spring Integration Reference (Service Activator)</a></p>
+    </div>
+
+    <script>
+        function checkAnswer(button, isCorrect) {
+            const feedback = document.getElementById('quiz-feedback');
+            feedback.style.display = 'block';
+            
+            document.querySelectorAll('.quiz-option button').forEach(btn => {
+                btn.style.backgroundColor = '#f8f9fa';
+                btn.style.borderColor = '#dee2e6';
+            });
+
+            if (isCorrect) {
+                button.style.backgroundColor = '#d4edda';
+                button.style.borderColor = '#c3e6cb';
+                feedback.className = 'quiz-feedback feedback-correct';
+                feedback.innerHTML = '<strong>Correct!</strong> This is how you chain operations together. The output of one service method becomes the payload of the message sent to the next step.';
+            } else {
+                button.style.backgroundColor = '#f8d7da';
+                button.style.borderColor = '#f5c6cb';
+                feedback.className = 'quiz-feedback feedback-incorrect';
+                feedback.innerHTML = '<strong>Incorrect.</strong> Try again. Think about how steps in an integration flow are chained together.';
+            }
+        }
+    </script>
+</body>
+</html>

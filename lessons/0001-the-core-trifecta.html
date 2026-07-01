@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 1: The Core Trifecta of Spring Integration</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+
+    <h1>Lesson 1: The Core Trifecta of Spring Integration</h1>
+    
+    <p>Welcome to Spring Integration! At its heart, Spring Integration is an implementation of Enterprise Integration Patterns (EIP). Its main goal is to enable communication between different systems or different components within a single system in a decoupled way.</p>
+
+    <p>Before we write any code, we need to understand the three fundamental building blocks. Everything in Spring Integration is built upon these three concepts:</p>
+
+    <h2>1. The Message</h2>
+    <p>A <code>Message</code> is a generic wrapper for any Java object combined with metadata used by the framework while handling that object. It consists of two parts:</p>
+    <ul>
+        <li><strong>Payload:</strong> The actual data you are transmitting (e.g., a String, a JSON payload, a custom <code>Order</code> object).</li>
+        <li><strong>Headers:</strong> Metadata about the payload (e.g., ID, timestamp, content-type, or custom routing information).</li>
+    </ul>
+
+    <h2>2. The Message Channel</h2>
+    <p>A <code>MessageChannel</code> is the pipe through which messages travel. Producers send messages to a channel, and consumers receive messages from a channel. Crucially, the producer doesn't know who the consumer is, and the consumer doesn't know who the producer is. <strong>Channels decouple endpoints.</strong></p>
+
+    <h2>3. The Message Endpoint</h2>
+    <p>A <code>MessageEndpoint</code> connects your application code to the messaging framework. They are the components that actually do things with messages. They receive messages from a channel, process them (transform, route, filter, etc.), and optionally send a result to another channel.</p>
+    <p>Common endpoints include <em>Transformers</em>, <em>Filters</em>, <em>Routers</em>, and <em>Service Activators</em>.</p>
+
+    <div class="note">
+        <strong>Analogy:</strong> Think of a postal system.
+        <br>- The <strong>Message</strong> is the envelope (Headers) and the letter inside (Payload).
+        <br>- The <strong>Message Channel</strong> is the road network or the mail tubes.
+        <br>- The <strong>Message Endpoints</strong> are the post offices, sorters, and mail carriers that process and route the envelopes.
+    </div>
+
+    <hr>
+
+    <div class="quiz-container">
+        <div class="quiz-question">Which component is responsible for decoupling the sender of a message from the receiver?</div>
+        <ul class="quiz-options">
+            <li class="quiz-option"><button onclick="checkAnswer(this, false)">The Message</button></li>
+            <li class="quiz-option"><button onclick="checkAnswer(this, true)">The Message Channel</button></li>
+            <li class="quiz-option"><button onclick="checkAnswer(this, false)">The Message Endpoint</button></li>
+        </ul>
+        <div id="quiz-feedback" class="quiz-feedback"></div>
+    </div>
+
+    <div class="footer">
+        <p><strong>Next steps:</strong> Head back to your terminal and tell me when you're ready for the next step, or ask any questions you have about these three concepts.</p>
+        <p><a href="https://docs.spring.io/spring-integration/reference/overview.html#overview-components" target="_blank">Primary Source: Spring Integration Reference (Core Components)</a></p>
+    </div>
+
+    <script>
+        function checkAnswer(button, isCorrect) {
+            const feedback = document.getElementById('quiz-feedback');
+            feedback.style.display = 'block';
+            
+            // reset all buttons
+            document.querySelectorAll('.quiz-option button').forEach(btn => {
+                btn.style.backgroundColor = '#f8f9fa';
+                btn.style.borderColor = '#dee2e6';
+            });
+
+            if (isCorrect) {
+                button.style.backgroundColor = '#d4edda';
+                button.style.borderColor = '#c3e6cb';
+                feedback.className = 'quiz-feedback feedback-correct';
+                feedback.innerHTML = '<strong>Correct!</strong> Channels act as the intermediary pipes, ensuring the sender doesn\'t need to know anything about who is receiving the message.';
+            } else {
+                button.style.backgroundColor = '#f8d7da';
+                button.style.borderColor = '#f5c6cb';
+                feedback.className = 'quiz-feedback feedback-incorrect';
+                feedback.innerHTML = '<strong>Incorrect.</strong> Try again. Think about the "pipe" connecting different parts of the system.';
+            }
+        }
+    </script>
+</body>
+</html>
