@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson 6: Testing Spring Cloud Stream</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+    <div class="card">
+        <h1>Lesson 6: Testing Spring Cloud Stream</h1>
+        <p>In a real-world project, you need automated tests. But spinning up a real Kafka or RabbitMQ container for every unit test is slow and brittle.</p>
+        <p>Spring Cloud Stream provides a dedicated testing module to solve this: <strong>TestBinder</strong>.</p>
+        
+        <h2>The TestBinder</h2>
+        <p>The <code>spring-cloud-stream-test-binder</code> dependency gives you a simulated, in-memory broker. It allows you to inject messages into an input binding and inspect messages coming out of an output binding, all within a standard JUnit test.</p>
+
+        <h3>1. Add the Dependency</h3>
+        <p>First, ensure you have the test binder in your <code>pom.xml</code> (in the <code>&lt;test&gt;</code> scope):</p>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-stream-test-binder&lt;/artifactId&gt;
+    &lt;scope&gt;test&lt;/scope&gt;
+&lt;/dependency&gt;
+</code></pre>
+
+        <h3>2. Using InputDestination and OutputDestination</h3>
+        <p>In your test class, you autowire two special beans provided by the test binder: <code>InputDestination</code> (to simulate incoming messages) and <code>OutputDestination</code> (to catch outgoing messages).</p>
+
+        <p>Let's test our <code>Function&lt;String, String&gt; uppercase</code> from Lesson 1:</p>
+
+<pre><code>import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cloud.stream.binder.test.InputDestination;
+import org.springframework.cloud.stream.binder.test.OutputDestination;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest
+public class TextProcessorTests {
+
+    @Autowired
+    private InputDestination input;
+
+    @Autowired
+    private OutputDestination output;
+
+    @Test
+    public void testUppercaseFunction() {
+        // 1. Create a test message
+        Message&lt;byte[]&gt; inputMessage = MessageBuilder.withPayload("hello".getBytes()).build();
+
+        // 2. Send it to the input binding
+        input.send(inputMessage, "uppercase-in-0");
+
+        // 3. Receive the result from the output binding (timeout after 1 second)
+        Message&lt;byte[]&gt; resultMessage = output.receive(1000, "uppercase-out-0");
+
+        // 4. Assert the result is what we expect
+        assertThat(resultMessage).isNotNull();
+        assertThat(new String(resultMessage.getPayload())).isEqualTo("HELLO");
+    }
+}
+</code></pre>
+
+        <h2>Why this is powerful</h2>
+        <p>Notice what this test accomplishes:</p>
+        <ul>
+            <li>It verifies your business logic (<code>hello</code> became <code>HELLO</code>).</li>
+            <li>It verifies that Spring successfully converted your byte array into a String and back.</li>
+            <li>It runs extremely fast, entirely in memory, without Docker or network dependencies.</li>
+        </ul>
+
+        <div class="interactive-box">
+            <h3>Knowledge Check</h3>
+            <p>You have written a <code>Consumer&lt;Order&gt;</code> that saves orders to a database. It does not output any messages back to the broker.</p>
+            <p>If you were writing a test for this using the Test Binder, which of these tools would you use?</p>
+            <ol style="list-style-type: upper-alpha;">
+                <li>Only <code>OutputDestination</code></li>
+                <li>Only <code>InputDestination</code></li>
+                <li>Both <code>InputDestination</code> and <code>OutputDestination</code></li>
+            </ol>
+            <input type="text" id="answer1" placeholder="Type A, B, or C">
+            <button onclick="checkAnswer()">Check Answer</button>
+            <div id="success" class="success-message">Correct! Since a Consumer doesn't produce an output binding, you only use <code>InputDestination</code> to send the message in, and then you would assert against your database repository to verify the order was saved.</div>
+            <div id="error" class="error-message">Not quite. Remember the definition of a Consumer from Lesson 1: it's a Sink. It takes data in, but does not send data out.</div>
+        </div>
+
+        <script>
+            function checkAnswer() {
+                const answer = document.getElementById('answer1').value.trim().toUpperCase();
+                const success = document.getElementById('success');
+                const error = document.getElementById('error');
+                
+                success.style.display = 'none';
+                error.style.display = 'none';
+
+                if (answer === 'B') {
+                    success.style.display = 'block';
+                } else {
+                    error.style.display = 'block';
+                }
+            }
+        </script>
+
+        <h2>Conclusion</h2>
+        <p>Congratulations! You have covered the journey from basic functional principles all the way to production readiness (Error handling) and automated testing. You are now equipped to apply Spring Cloud Stream in your real-world projects!</p>
+    </div>
+</body>
+</html>

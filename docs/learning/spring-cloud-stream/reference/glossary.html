@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring Cloud Stream Glossary</title>
+    <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+    <div class="card">
+        <h1>Spring Cloud Stream Glossary</h1>
+        <dl>
+            <dt><strong>Source / Supplier</strong></dt>
+            <dd>An application that publishes messages. Represented by <code>java.util.function.Supplier</code>.</dd>
+            
+            <dt><strong>Processor / Function</strong></dt>
+            <dd>An application that consumes messages, transforms them, and publishes the result. Represented by <code>java.util.function.Function</code>.</dd>
+            
+            <dt><strong>Sink / Consumer</strong></dt>
+            <dd>An application that consumes messages and does not publish any outputs back to the messaging system. Represented by <code>java.util.function.Consumer</code>.</dd>
+            
+            <dt><strong>Binder</strong></dt>
+            <dd>The component responsible for providing integration with the physical messaging system (e.g., Kafka, RabbitMQ).</dd>
+
+            <dt><strong>Binding</strong></dt>
+            <dd>The logical bridge between your code (the Java function) and a physical destination (topic/queue) on the broker.</dd>
+
+            <dt><strong>Consumer Group</strong></dt>
+            <dd>A mechanism to allow multiple instances of an application to scale out message consumption. Each message is processed by only one instance in the group.</dd>
+
+            <dt><strong>MessageConverter</strong></dt>
+            <dd>A Spring framework mechanism that automatically converts incoming byte arrays from the broker into Java objects, and outgoing Java objects into byte arrays.</dd>
+
+            <dt><strong>Message&lt;T&gt;</strong></dt>
+            <dd>A Spring messaging wrapper object that contains both the <code>payload</code> (your data) and <code>headers</code> (metadata about the message).</dd>
+
+            <dt><strong>StreamBridge</strong></dt>
+            <dd>A utility class provided by Spring Cloud Stream used to imperatively send messages to output bindings or destinations at runtime (e.g., from a REST controller or conditionally within a Consumer).</dd>
+
+            <dt><strong>DLQ (Dead Letter Queue)</strong></dt>
+            <dd>A secondary queue or topic where messages are sent if they cannot be processed successfully by the application (usually after retries are exhausted). Essential for preventing data loss.</dd>
+            
+            <dt><strong>TestBinder</strong></dt>
+            <dd>An in-memory, simulated binder provided by <code>spring-cloud-stream-test-binder</code> used for fast, isolated unit/integration testing.</dd>
+
+            <dt><strong>InputDestination / OutputDestination</strong></dt>
+            <dd>Testing utilities used with the TestBinder to inject messages into and read messages out of your application's bindings during a test.</dd>
+        </dl>
+    </div>
+</body>
+</html>
