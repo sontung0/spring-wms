@@ -40,9 +40,8 @@
 | `app/src/main/java/nst/wms/user/application/UserServiceImpl.java` | Add `ApplicationEventPublisher` field, publish events in `create()` and `updateByEmail()` |
 | `app/src/test/java/nst/wms/user/application/UserServiceTest.java` | Add test for event publishing on `create()` |
 | `app/src/test/java/nst/wms/user/application/UpdateByEmailTest.java` | Add test for event publishing on `updateByEmail()` |
-| `worker/pom.xml` | Add `spring-modulith-events-kafka` and `spring-cloud-stream-binder-kafka` |
+| `worker/pom.xml` | Add `spring-modulith-events-kafka` and `spring-cloud-stream-binder-kafka` (with Spring Cloud + Spring Modulith BOMs inside worker) |
 | `worker/src/main/resources/application.properties` | Add Kafka and Cloud Stream configuration |
-| `pom.xml` (root) | Add Spring Cloud BOM to `dependencyManagement` |
 
 ---
 
@@ -333,22 +332,28 @@ git commit -m "feat: publish UserCreatedEvent/UserUpdatedEvent from UserService"
 
 ---
 
-### Task 4: Add Spring Cloud BOM and worker dependencies
+### Task 4: Add Spring Modulith and Spring Cloud BOMs + worker dependencies
 
 **Files:**
-- Modify: `pom.xml` (root)
 - Modify: `worker/pom.xml`
 
 **Interfaces:**
-- Produces: `spring-modulith-events-kafka` and `spring-cloud-stream-binder-kafka` available on worker classpath
+- Produces: `spring-modulith-events-kafka` and `spring-cloud-stream-binder-kafka` available on worker classpath with their versions managed locally in worker
 
-- [ ] **Step 1: Add Spring Cloud BOM to root `pom.xml`**
+- [ ] **Step 1: Add BOMs and dependencies to `worker/pom.xml`**
 
-In `pom.xml` (root), add after the `<modules>` section (or at the end before `</project>`):
+In `worker/pom.xml`, add the two BOMs inside `<dependencyManagement>` (after the parent section or existing dependencyManagement), then add the dependencies after the `lombok` dependency:
 
 ```xml
 <dependencyManagement>
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-bom</artifactId>
+            <version>2.1.0</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-dependencies</artifactId>
@@ -360,9 +365,7 @@ In `pom.xml` (root), add after the `<modules>` section (or at the end before `</
 </dependencyManagement>
 ```
 
-- [ ] **Step 2: Add dependencies to `worker/pom.xml`**
-
-In `worker/pom.xml`, add after the `lombok` dependency:
+Then the dependencies:
 
 ```xml
 <dependency>
@@ -375,7 +378,7 @@ In `worker/pom.xml`, add after the `lombok` dependency:
 </dependency>
 ```
 
-- [ ] **Step 3: Verify compilation**
+- [ ] **Step 2: Verify compilation**
 
 ```bash
 mvn compile -pl worker -am
@@ -383,11 +386,11 @@ mvn compile -pl worker -am
 
 Expected: BUILD SUCCESS
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
-git add pom.xml worker/pom.xml
-git commit -m "chore: add Spring Cloud BOM and worker dependencies for Kafka"
+git add worker/pom.xml
+git commit -m "chore: add Spring Modulith and Spring Cloud BOMs + Kafka dependencies to worker"
 ```
 
 ---
@@ -631,7 +634,7 @@ git commit -m "chore: add Kafka and Cloud Stream configuration for worker"
 - [ ] No `@Externalized` annotation used anywhere
 - [ ] `@Transactional` on `create()` and `updateByEmail()`
 - [ ] `ApplicationEventPublisher` injected via constructor (no `@Autowired`)
-- [ ] Spring Cloud BOM in root `pom.xml` dependencyManagement
+- [ ] Spring Modulith and Spring Cloud BOMs inside `worker/pom.xml` `<dependencyManagement>` (not root)
 - [ ] `spring-modulith-events-kafka` and `spring-cloud-stream-binder-kafka` in worker
 - [ ] Cloud Stream function definition includes both consumer beans
 - [ ] Both consumers bind to the same topic `"users"` with the same group
