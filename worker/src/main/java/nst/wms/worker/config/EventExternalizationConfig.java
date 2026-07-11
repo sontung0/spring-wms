@@ -12,7 +12,7 @@ class EventExternalizationConfig {
     @Bean
     EventExternalizationConfiguration eventExternalizationConfiguration() {
         return EventExternalizationConfiguration.externalizing()
-            .select(EventExternalizationConfiguration.selectByType(ExternalEvent.class))
+            .selectByType(ExternalEvent.class)
             .routeAll(event -> {
                 var e = (ExternalEvent) event;
                 return RoutingTarget.forTarget(e.getEventTarget()).andKey(e.getEventKey());
