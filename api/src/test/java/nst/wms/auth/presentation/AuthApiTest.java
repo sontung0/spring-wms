@@ -1,16 +1,12 @@
 package nst.wms.auth.presentation;
 
-import nst.wms.auth.application.TokenService;
-import nst.wms.auth.infrastructure.OAuthProviderRegistry;
 import nst.wms.auth.infrastructure.OAuthProviderProperties;
 import nst.wms.auth.infrastructure.StateCache;
 import nst.wms.auth.infrastructure.OAuthProvider;
 import nst.wms.auth.infrastructure.OAuthTokens;
 import nst.wms.auth.domain.AuthUser;
-import nst.wms.auth.infrastructure.UserIdentityRepository;
 import nst.wms.user.application.UserService;
 import nst.wms.user.application.UserUpdateData;
-import nst.wms.user.domain.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -36,22 +32,13 @@ class AuthApiTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private OAuthProviderRegistry providerRegistry;
-
-    @Autowired
     private StateCache stateCache;
-
-    @Autowired
-    private TokenService tokenService;
 
     @Autowired
     private UserService userService;
 
     @Autowired
     private OAuthProviderProperties oAuthProviderProperties;
-
-    @Autowired
-    private UserIdentityRepository userIdentityRepository;
 
     @Test
     void authorize_shouldReturnAuthorizationUrl() throws Exception {
@@ -91,7 +78,7 @@ class AuthApiTest {
         // Create a test user
         UserUpdateData updateData = new UserUpdateData();
         updateData.name = "API Test";
-        User testUser = userService.updateByEmail("api-test@example.com", updateData);
+        userService.updateByEmail("api-test@example.com", updateData);
 
         // Mock the OAuth provider
         OAuthProvider mockProvider = mock(OAuthProvider.class);
