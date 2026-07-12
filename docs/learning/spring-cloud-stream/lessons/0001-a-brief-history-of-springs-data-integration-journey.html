@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0001 • A Brief History of Spring’s Data Integration Journey</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="lesson-header">
+    <div class="lesson-meta">
+      <span class="lesson-number">Lesson 0001</span>
+      <span>Foundations • Phase 1</span>
+      <span>~10 min read</span>
+    </div>
+    <h1>A Brief History of Spring’s Data Integration Journey</h1>
+    <p><em>Understanding where Spring Cloud Stream came from helps you understand why it exists.</em></p>
+  </div>
+
+  <h2>Why Start With History?</h2>
+  
+  <p>Every technology decision you make as an engineer is easier when you know the problem it was designed to solve. Spring Cloud Stream did not appear overnight. It is the result of more than a decade of evolution in how Spring applications have handled data integration.</p>
+
+  <h2>The Evolution of Spring Integration</h2>
+  
+  <p>Long before Spring Cloud Stream, the Spring ecosystem already had a powerful integration framework called <strong>Spring Integration</strong>. It gave developers a consistent model for connecting systems using well-known Enterprise Integration Patterns (EIP).</p>
+  
+  <p>However, as cloud-native and microservice architectures became dominant, several new challenges emerged:</p>
+  
+  <ul>
+    <li>Applications needed to be <strong>stateless and horizontally scalable</strong></li>
+    <li>Teams wanted to <strong>decouple services</strong> through asynchronous messaging rather than synchronous REST calls</li>
+    <li>Developers needed to support <strong>multiple message brokers</strong> (Kafka, RabbitMQ, etc.) without rewriting integration code</li>
+    <li>Configuration and deployment needed to be <strong>environment-agnostic</strong></li>
+  </ul>
+
+  <div class="callout primary">
+    <strong>Key realization:</strong> The industry needed a higher-level abstraction that focused on <em>business logic</em> while hiding the complexity of message brokers and infrastructure.
+  </div>
+
+  <h2>Enter Spring Cloud Stream</h2>
+  
+  <p>Spring Cloud Stream was created to address exactly these needs. It builds on the solid foundation of Spring Integration and Spring Cloud but introduces a simpler, opinionated programming model based on functional interfaces (<code>Supplier</code>, <code>Function</code>, <code>Consumer</code>).</p>
+  
+  <p>Its core innovation — the <strong>binder abstraction</strong> — lets you write broker-agnostic code that can be connected to any supported message broker at deployment time. This is the concept we will explore in depth in later lessons.</p>
+
+  <h2>How This Serves Your Mission</h2>
+  
+  <p>Your mission is to master Spring Cloud Stream so you can confidently design, implement, and operate event-driven microservices in production.</p>
+  
+  <p>Understanding the historical context helps you:</p>
+  <ul>
+    <li>Appreciate why the binder abstraction exists</li>
+    <li>Recognize when Spring Cloud Stream is the right tool versus when plain Spring Integration or another solution might be better</li>
+    <li>Communicate the value of the framework to teammates and stakeholders</li>
+  </ul>
+
+  <h2>Primary Source</h2>
+  
+  <p>Read the original historical overview written by the Spring team:</p>
+  <p><a href="https://docs.spring.io/spring-cloud-stream/reference/preface.html" target="_blank">A Brief History of Spring’s Data Integration Journey</a></p>
+
+  <div class="callout success">
+    <strong>Action:</strong> Read the preface page above. It is short but gives you the full narrative arc that led to the framework you are learning.
+  </div>
+
+  <div class="lesson-nav">
+    <span></span>
+    <a href="0002-introduction-to-spring-cloud-stream.html">Next lesson → Introduction to Spring Cloud Stream</a>
+  </div>
+
+  <div class="reminder">
+    <strong>Reminder:</strong> This agent is your teacher. If anything is unclear or you want to explore a related concept, ask a followup question in chat. We will build the next lesson together based on your questions and pace.
+  </div>
+</body>
+</html>

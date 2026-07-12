@@ -31,6 +31,19 @@ To learn at a deep level, the user needs three things:
 
 Before the `RESOURCES.md` is well-populated, your focus should be to find high-quality resources which will help the user acquire knowledge. Never trust your parametric knowledge.
 
+### Resource Discovery Workflow (Hybrid Approach)
+
+When the user provides only a root documentation URL, follow this token-efficient workflow:
+
+1. Fetch the root page once and extract the full list of child pages from its table of contents / navigation menu.
+2. Identify a small number of **key overview / foundational pages** (e.g., "Getting Started", "Core Concepts", "Programming Model", "Configuration").
+3. Fetch only those key pages (plus the root) to understand actual content depth and logical progression.
+4. Generate concise "Use for:" descriptions and propose a **learning sequence** (basic → intermediate → advanced) based on the extracted information.
+5. Present the complete list, proposed descriptions, and suggested learning path to the user for explicit approval.
+6. Only after user approval, update `RESOURCES.md` with the selected entries.
+
+This approach keeps token usage low while enabling a well-structured curriculum that progresses logically from basic to advanced topics.
+
 Some topics may require more skills than knowledge. Learning more about theoretical physics might be more knowledge-based. For yoga, more skills-based.
 
 ### Fluency vs Storage Strength
