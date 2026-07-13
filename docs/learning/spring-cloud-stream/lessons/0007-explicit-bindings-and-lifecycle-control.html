@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0007 • Explicit Bindings, Lifecycle Control, and Post-Processing</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="lesson-header">
+    <div class="lesson-meta">
+      <span class="lesson-number">Lesson 0007</span>
+      <span>Programming Model • Phase 2</span>
+      <span>~12 min read</span>
+    </div>
+    <h1>Explicit Bindings, Lifecycle Control, and Post-Processing</h1>
+    <p><em>Wrapping up the Programming Model with advanced binding management.</em></p>
+  </div>
+
+  <h2>1. Explicit Binding Creation</h2>
+  
+  <p>We know that bindings are created implicitly based on your <code>Function</code> names (e.g., <code>myFunction-in-0</code>). But what if you want to create a binding that isn't tied to a function? This is common when you want to use <code>StreamBridge</code> to send messages to a pre-configured destination.</p>
+  
+  <p>You can create bindings explicitly using application properties:</p>
+  <pre><code>spring.cloud.stream.input-bindings=myInput;anotherInput
+spring.cloud.stream.output-bindings=myOutput;anotherOutput</code></pre>
+  
+  <div class="callout primary">
+    <strong>Important:</strong> Explicit bindings do <strong>not</strong> get the <code>-in-0</code> or <code>-out-0</code> suffix. The binding name is exactly what you typed. You configure it like this: <code>spring.cloud.stream.bindings.myOutput.destination=my-topic</code>.
+  </div>
+
+  <h2>2. Binding Visualization and Control</h2>
+  
+  <p>Sometimes you need to stop consuming messages temporarily (e.g., during maintenance) without shutting down the whole application. Spring Cloud Stream allows you to control the lifecycle of individual bindings at runtime.</p>
+  
+  <h3>Via Actuator (HTTP)</h3>
+  <p>If you include <code>spring-boot-starter-actuator</code> and expose the <code>bindings</code> endpoint, you can view all bindings at <code>/actuator/bindings</code>.</p>
+  <p>You can stop a binding by sending a POST request:</p>
+  <pre><code>curl -d '{"state":"STOPPED"}' -H "Content-Type: application/json" -X POST http://localhost:8080/actuator/bindings/myFunction-in-0</code></pre>
+  
+  <h3>Via Java (Programmatically)</h3>
+  <p>You can inject the <code>BindingsLifecycleController</code> bean to do the same thing in code:</p>
+<pre><code>@Autowired
+private BindingsLifecycleController bindingsController;
+
+public void pauseConsumption() {
+    bindingsController.changeState("myFunction-in-0", State.STOPPED);
+}</code></pre>
+
+  <h2>3. Post-Processing (After Sending)</h2>
+  
+  <p>Normally, when your function returns a value, the framework sends it to the broker. But what if you need to execute some logic <strong>strictly after</strong> the message has been successfully sent to the broker (e.g., updating a database to mark a record as "published")?</p>
+  
+  <p>You can implement the <code>PostProcessingFunction</code> interface, which adds a <code>postProcess(Message&lt;O&gt; result)</code> method to your function.</p>
+  
+<pre><code>public class MyProcessor implements PostProcessingFunction&lt;String, String&gt; {
+    @Override
+    public String apply(String input) {
+        return input.toUpperCase();
+    }
+
+    @Override
+    public void postProcess(Message&lt;String&gt; result) {
+        System.out.println("Message successfully sent to the broker!");
+    }
+}</code></pre>
+
+  <h2>Primary Sources</h2>
+  
+  <ul>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/explicit-binding-creation.html" target="_blank">Explicit binding creation</a></li>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/binding_visualization_control.html" target="_blank">Binding visualization and control</a></li>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/post-processing-after-sending-message.html" target="_blank">Post processing</a></li>
+  </ul>
+
+  <div class="callout success">
+    <strong>Comprehensive Assessment:</strong><br><br>
+    1. If you define <code>spring.cloud.stream.output-bindings=auditLog</code>, what is the exact property key to set its destination to the <code>audit-topic</code>?<br>
+    2. What Spring Boot starter dependency must you include to control bindings via HTTP endpoints like <code>/actuator/bindings</code>?<br>
+    3. If you want to stop a binding programmatically from within your Java code, what specific bean should you autowire?<br>
+    4. Why would you use <code>PostProcessingFunction</code> instead of just composing a second function using the <code>|</code> operator?
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0006-event-routing.html">← Previous</a>
+    <a href="#">Next lesson → Error Handling (Coming Soon)</a>
+  </div>
+
+  <div class="reminder">
+    <strong>Reminder:</strong> This agent is your teacher. If anything is unclear or you want to explore a related concept, ask a followup question in chat.
+  </div>
+</body>
+</html>

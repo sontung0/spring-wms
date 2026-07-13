@@ -101,8 +101,9 @@ Each lesson, the user should always feel as if they are being challenged 'just e
 
 The user may specify an exact thing they want to learn. If they don't, figure out their zone of proximal development by:
 
-- Reading their `learning-records`
-- Figuring out the right thing to teach them based on their mission
+- Reading their `learning-records` to see what was just completed.
+- Opening and reading `RESOURCES.md` to find the *very next* uncompleted topic in the sequence.
+- You MUST follow the `RESOURCES.md` sequence strictly. Do not skip or group topics unless explicitly requested by the user.
 - Teach the most relevant thing that fits in their zone of proximal development
 
 ## Knowledge

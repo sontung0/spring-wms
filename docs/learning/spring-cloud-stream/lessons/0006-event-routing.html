@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0006 • Event Routing</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="lesson-header">
+    <div class="lesson-meta">
+      <span class="lesson-number">Lesson 0006</span>
+      <span>Programming Model • Phase 2</span>
+      <span>~12 min read</span>
+    </div>
+    <h1>Event Routing</h1>
+    <p><em>Dynamically routing messages to functions, or routing outputs to dynamic destinations.</em></p>
+  </div>
+
+  <h2>1. Routing TO a Consumer (Inbound Routing)</h2>
+  
+  <p>Sometimes you have a single input topic, but you want to process the messages differently based on their content. For example, you might want to route "VIP" orders to a <code>processVipOrder</code> function, and standard orders to a <code>processStandardOrder</code> function.</p>
+  
+  <p>To do this, you enable the built-in <code>RoutingFunction</code>:</p>
+  <pre><code>spring.cloud.stream.function.routing.enabled=true</code></pre>
+  
+  <p>When enabled, the framework exposes a special input binding named <strong><code>functionRouter-in-0</code></strong>. You bind this to your topic:</p>
+  <pre><code>spring.cloud.stream.bindings.functionRouter-in-0.destination=orders-topic</code></pre>
+
+  <h3>How does it know which function to call?</h3>
+  
+  <p><strong>Option A: SpEL Expressions</strong><br>
+  You can provide a SpEL expression via application properties to evaluate the message (e.g., checking a header):</p>
+  <pre><code>spring.cloud.function.routing-expression=headers['orderType'] == 'VIP' ? 'processVipOrder' : 'processStandardOrder'</code></pre>
+  
+  <p><strong>Option B: MessageRoutingCallback</strong><br>
+  For complex logic, you can write a Java bean that implements <code>MessageRoutingCallback</code>. This takes precedence over SpEL expressions.</p>
+<pre><code>@Bean
+public MessageRoutingCallback customRouter() {
+    return message -&gt; {
+        Order payload = (Order) message.getPayload();
+        return payload.getAmount() &gt; 1000 ? "processVipOrder" : "processStandardOrder";
+    };
+}</code></pre>
+
+  <h2>2. Routing FROM a Consumer (Outbound Routing)</h2>
+  
+  <p>What if your function processes a message, and you want to dynamically decide which topic to send the result to?</p>
+  
+  <p>You can do this by returning a <code>Message</code> object and setting a special header: <strong><code>spring.cloud.stream.sendto.destination</code></strong>.</p>
+  
+<pre><code>@Bean
+public Function&lt;Order, Message&lt;Order&gt;&gt; processOrder() {
+    return order -&gt; {
+        String targetTopic = order.isInternational() ? "intl-orders" : "domestic-orders";
+        
+        return MessageBuilder.withPayload(order)
+            .setHeader("spring.cloud.stream.sendto.destination", targetTopic)
+            .build();
+    };
+}</code></pre>
+  <p>The framework will intercept this header, ignore the standard output binding, and dynamically send the message to the topic specified in the header.</p>
+  
+  <div class="callout primary">
+    <strong>Note:</strong> You can also use <code>StreamBridge</code> (which we learned about in Lesson 4) to send messages to dynamic destinations programmatically!
+  </div>
+
+  <h2>Primary Sources</h2>
+  
+  <ul>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/event-routing.html" target="_blank">Event Routing</a></li>
+  </ul>
+
+  <div class="callout success">
+    <strong>Comprehensive Assessment:</strong><br><br>
+    1. To route incoming messages to different functions, what property must you set to <code>true</code>?<br>
+    2. When routing is enabled, what is the exact name of the input binding you must configure to connect to your broker?<br>
+    3. If you want to write complex Java logic to determine the target function, what interface should your bean implement?<br>
+    4. If your function wants to dynamically choose its output topic, what exact header name must it set on the returned <code>Message</code>?
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0005-advanced-functional-programming.html">← Previous</a>
+    <a href="#">Next lesson → Error Handling (Coming Soon)</a>
+  </div>
+
+  <div class="reminder">
+    <strong>Reminder:</strong> This agent is your teacher. If anything is unclear or you want to explore a related concept, ask a followup question in chat.
+  </div>
+</body>
+</html>
