@@ -73,6 +73,8 @@ Each lesson should link via HTML anchors to other lessons and reference document
 
 Each lesson should recommend a primary source for the user to read or watch. This should be the most high-quality, high-trust resource you found on the topic.
 
+Each lesson MUST include a comprehensive "Action" or "Assessment" section at the end. Instead of asking a single question about one concept, this assessment must test *all* the key knowledge points covered in that specific lesson to ensure thorough retrieval practice and build storage strength.
+
 Each lesson should contain a reminder to ask followup questions to the agent. The agent is their teacher, and can assist with anything that's unclear.
 
 ## Assets

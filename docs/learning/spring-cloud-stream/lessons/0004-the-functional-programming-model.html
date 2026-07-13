@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0004 • The Functional Programming Model</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="lesson-header">
+    <div class="lesson-meta">
+      <span class="lesson-number">Lesson 0004</span>
+      <span>Programming Model • Phase 2</span>
+      <span>~15 min read</span>
+    </div>
+    <h1>The Functional Programming Model</h1>
+    <p><em>Writing message handlers using pure Java functions.</em></p>
+  </div>
+
+  <h2>The Shift to Functions</h2>
+  
+  <p>In older versions of Spring Cloud Stream, you had to use framework-specific annotations like <code>@StreamListener</code>. Today, the recommended approach is to use the built-in support for <strong>Spring Cloud Function</strong>. You simply express your message handlers as beans of type <code>java.util.function.[Supplier/Function/Consumer]</code>.</p>
+
+  <h2>The Three Core Interfaces</h2>
+
+  <h3>1. Function (Processor)</h3>
+  <p>A <code>Function&lt;I, O&gt;</code> takes an input and produces an output. It acts as a processor in the middle of a stream.</p>
+<pre><code>@Bean
+public Function&lt;String, String&gt; toUpperCase() {
+    return s -&gt; s.toUpperCase();
+}</code></pre>
+
+  <h3>2. Consumer (Sink)</h3>
+  <p>A <code>Consumer&lt;I&gt;</code> takes an input but returns nothing. It is the end of the line (a sink), like saving to a database or printing to the console.</p>
+<pre><code>@Bean
+public Consumer&lt;String&gt; sink() {
+    return System.out::println;
+}</code></pre>
+
+  <h3>3. Supplier (Source)</h3>
+  <p>A <code>Supplier&lt;O&gt;</code> takes no input but produces an output. It is the origin of data.</p>
+<pre><code>@Bean
+public Supplier&lt;String&gt; stringSupplier() {
+    return () -&gt; "Hello from Supplier";
+}</code></pre>
+  <div class="callout primary">
+    <strong>How is a Supplier triggered?</strong> Because a Supplier has no input to trigger it, the framework provides a default <strong>polling mechanism</strong>. By default, it will invoke your Supplier's <code>get()</code> method every 1 second (1000ms) and send the result to the broker.
+  </div>
+
+  <h2>Functional Binding Names</h2>
+  
+  <p>How does the framework know which Kafka topic to connect your function to? It uses a strict naming convention for bindings:</p>
+  
+  <ul>
+    <li><strong>Input bindings:</strong> <code>&lt;functionName&gt;-in-&lt;index&gt;</code></li>
+    <li><strong>Output bindings:</strong> <code>&lt;functionName&gt;-out-&lt;index&gt;</code></li>
+  </ul>
+  
+  <p>For the <code>toUpperCase</code> function above, the framework automatically creates two bindings: <code>toUpperCase-in-0</code> and <code>toUpperCase-out-0</code>. (The index is 0 because it's a simple function with one input and one output).</p>
+  
+  <p>You then configure the actual destinations in your <code>application.yml</code>:</p>
+<pre><code>spring.cloud.stream.bindings.toUpperCase-in-0.destination=raw-data-topic
+spring.cloud.stream.bindings.toUpperCase-out-0.destination=processed-data-topic</code></pre>
+
+  <h2>StreamBridge: Bridging the Gap</h2>
+  
+  <p>What if you want to send a message to Kafka from a REST Controller? A <code>Supplier</code> won't work because it's polled automatically. You need to send data <em>on demand</em>.</p>
+  
+  <p>For this, Spring Cloud Stream provides <code>StreamBridge</code>.</p>
+<pre><code>@RestController
+public class WebSourceController {
+
+    @Autowired
+    private StreamBridge streamBridge;
+
+    @PostMapping("/data")
+    public void sendData(@RequestBody String body) {
+        // Sends the body to the "myDestination" binding (or topic directly)
+        streamBridge.send("myDestination", body);
+    }
+}</code></pre>
+
+  <h2>Primary Sources</h2>
+  
+  <ul>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/functional-binding-names.html" target="_blank">Functional binding names</a></li>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/producing-and-consuming-messages.html" target="_blank">Producing and Consuming Messages</a></li>
+  </ul>
+
+  <div class="callout success">
+    <strong>Action:</strong> If you had a function named <code>processOrder</code>, what would be the exact property key to set its input destination to a topic named <code>orders-topic</code>?
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0003-publish-subscribe-consumer-groups-and-partitioning.html">← Previous</a>
+    <a href="#">Next lesson → Event Routing (Coming Soon)</a>
+  </div>
+
+  <div class="reminder">
+    <strong>Reminder:</strong> This agent is your teacher. If anything is unclear or you want to explore a related concept, ask a followup question in chat.
+  </div>
+</body>
+</html>

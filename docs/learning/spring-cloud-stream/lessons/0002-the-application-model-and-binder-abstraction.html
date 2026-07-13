@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0002 • The Application Model and Binder Abstraction</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="lesson-header">
+    <div class="lesson-meta">
+      <span class="lesson-number">Lesson 0002</span>
+      <span>Foundations • Phase 1</span>
+      <span>~10 min read</span>
+    </div>
+    <h1>The Application Model and Binder Abstraction</h1>
+    <p><em>How Spring Cloud Stream separates your business logic from the message broker.</em></p>
+  </div>
+
+  <h2>The Core Philosophy</h2>
+  
+  <p>A Spring Cloud Stream application consists of a <strong>middleware-neutral core</strong>. This means your application code should not know or care whether it is talking to Kafka, RabbitMQ, or Pulsar.</p>
+  
+  <p>The application communicates with the outside world by establishing <strong>bindings</strong> between destinations exposed by the external brokers (like a Kafka topic or RabbitMQ exchange) and input/output arguments in your code.</p>
+
+  <h2>The Programming Model: Just Functions</h2>
+  
+  <p>In modern Spring Cloud Stream, you implement your business logic using standard Java functional interfaces: <code>java.util.function.Function</code>, <code>Consumer</code>, and <code>Supplier</code>.</p>
+  
+  <p>Here is a complete Spring Cloud Stream application that receives a string, converts it to uppercase, and sends it out:</p>
+
+<pre><code>@SpringBootApplication
+public class SampleApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(SampleApplication.class, args);
+    }
+
+    @Bean
+    public Function&lt;String, String&gt; uppercase() {
+        return value -&gt; value.toUpperCase();
+    }
+}</code></pre>
+
+  <p>Notice what is missing? There are no Kafka APIs, no RabbitMQ annotations, and no messaging boilerplate. It is just a pure Java function.</p>
+
+  <h2>The Binder Abstraction</h2>
+  
+  <p>If the code is just a function, how does it connect to a message broker? This is where the <strong>Binder</strong> comes in.</p>
+  
+  <p>The Binder is a component that implements the broker-specific details necessary to establish bindings. Spring Cloud Stream provides Binder implementations for Kafka, RabbitMQ, Pulsar, and others.</p>
+  
+  <p>By simply adding a binder dependency (e.g., <code>spring-cloud-stream-binder-kafka</code>) to your classpath, Spring Cloud Stream automatically detects it and wires your function to the broker.</p>
+
+  <div class="callout primary">
+    <strong>Key Concept:</strong> You can change the underlying message broker entirely just by swapping the binder dependency in your <code>pom.xml</code> or <code>build.gradle</code>, without changing a single line of your Java code.
+  </div>
+
+  <h2>Configuration</h2>
+  
+  <p>The mapping between your function and the actual broker destinations (topics/queues) is done via external configuration (e.g., <code>application.yml</code>). For example, you can tell the framework that the input of the <code>uppercase</code> function should read from the <code>raw-sensor-data</code> topic.</p>
+
+  <h2>Primary Sources</h2>
+  
+  <ul>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream.html" target="_blank">Introducing Spring Cloud Stream</a></li>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/overview-application-model.html" target="_blank">Application Model</a></li>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/overview-binder-abstraction.html" target="_blank">The Binder Abstraction</a></li>
+  </ul>
+
+  <div class="callout success">
+    <strong>Action:</strong> Review the code snippet above. Think about how you would test this function. Because it's just a standard Java <code>Function</code>, you can test it with a simple unit test, completely independent of any messaging infrastructure!
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0001-a-brief-history-of-springs-data-integration-journey.html">← Previous</a>
+    <a href="0003-persistent-publish-subscribe-and-consumer-groups.html">Next lesson → Publish-Subscribe & Consumer Groups</a>
+  </div>
+
+  <div class="reminder">
+    <strong>Reminder:</strong> This agent is your teacher. If anything is unclear or you want to explore a related concept, ask a followup question in chat.
+  </div>
+</body>
+</html>

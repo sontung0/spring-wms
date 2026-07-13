@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0003 • Publish-Subscribe, Consumer Groups, and Partitioning</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="lesson-header">
+    <div class="lesson-meta">
+      <span class="lesson-number">Lesson 0003</span>
+      <span>Foundations • Phase 1</span>
+      <span>~12 min read</span>
+    </div>
+    <h1>Publish-Subscribe, Consumer Groups, and Partitioning</h1>
+    <p><em>How Spring Cloud Stream routes messages to the right application instances.</em></p>
+  </div>
+
+  <h2>1. Persistent Publish-Subscribe</h2>
+  
+  <p>Communication between applications in Spring Cloud Stream follows a <strong>publish-subscribe</strong> model. Data is broadcast through shared topics.</p>
+  
+  <p>If an application publishes a message to a destination (e.g., <code>raw-sensor-data</code>), <em>multiple independent applications</em> can subscribe to that destination. Each application will receive its own copy of the message. This reduces coupling and allows you to add new applications to the topology without disrupting existing flows.</p>
+
+  <h2>2. Consumer Groups</h2>
+  
+  <p>What happens when you need to scale up a single application? If you run 3 instances of your "average-calculating" application, you don't want all 3 instances to process the exact same message. You want them to share the load.</p>
+  
+  <p>Spring Cloud Stream solves this with <strong>Consumer Groups</strong> (inspired by Kafka). When multiple instances of an application share the same group name, they are placed in a <em>competing consumer</em> relationship. Only <strong>one</strong> instance in the group will receive a given message.</p>
+  
+  <p>You configure this via properties:</p>
+  <pre><code>spring.cloud.stream.bindings.myFunction-in-0.group=average-calculator-group</code></pre>
+  
+  <div class="callout primary">
+    <strong>Rule of Thumb:</strong> Every independent microservice should have its own unique consumer group name. If you don't specify a group, Spring Cloud Stream creates an anonymous, single-member group (which means it will receive every message, but won't share the load with other instances).
+  </div>
+
+  <h2>3. Partitioning</h2>
+  
+  <p>Sometimes, just sharing the load isn't enough. In <strong>stateful processing</strong>, you need to ensure that all related data is processed by the <em>same</em> consumer instance. For example, all temperature readings from "Sensor A" must go to Instance 1, so it can calculate an accurate rolling average.</p>
+  
+  <p>This is called <strong>Partitioning</strong>. Spring Cloud Stream provides a uniform abstraction for partitioning, even if the underlying broker (like RabbitMQ) doesn't support it natively.</p>
+  
+  <h3>Configuring the Producer</h3>
+  <p>The producer must be configured to extract a "partition key" from the message (e.g., the sensor ID) to determine which partition the message belongs to:</p>
+  <pre><code>spring.cloud.stream.bindings.myFunction-out-0.producer.partitionKeyExpression=headers.sensorId
+spring.cloud.stream.bindings.myFunction-out-0.producer.partitionCount=5</code></pre>
+
+  <h3>Configuring the Consumer</h3>
+  <p>The consumer must be configured to know it is receiving partitioned data. (Note: If you are using Kafka with auto-rebalance enabled, Kafka handles the consumer side automatically!)</p>
+  <pre><code>spring.cloud.stream.bindings.myFunction-in-0.consumer.partitioned=true
+spring.cloud.stream.instanceCount=5
+spring.cloud.stream.instanceIndex=0 # This changes per instance (0 to 4)</code></pre>
+
+  <h2>Primary Sources</h2>
+  
+  <ul>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/overview-persistent-publish-subscribe-support.html" target="_blank">Persistent publish-subscribe support</a></li>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/consumer-groups.html" target="_blank">Consumer group support</a></li>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/overview-partitioning.html" target="_blank">Partitioning support</a></li>
+  </ul>
+
+  <div class="callout success">
+    <strong>Action:</strong> Think about a system you've built. Where would you use a Consumer Group to scale out? Where would you need Partitioning to ensure data consistency?
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0002-the-application-model-and-binder-abstraction.html">← Previous</a>
+    <a href="#">Next lesson → Programming Model (Coming Soon)</a>
+  </div>
+
+  <div class="reminder">
+    <strong>Reminder:</strong> This agent is your teacher. If anything is unclear or you want to explore a related concept, ask a followup question in chat.
+  </div>
+</body>
+</html>

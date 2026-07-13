@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0005 • Advanced Functional Programming</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="lesson-header">
+    <div class="lesson-meta">
+      <span class="lesson-number">Lesson 0005</span>
+      <span>Programming Model • Phase 2</span>
+      <span>~15 min read</span>
+    </div>
+    <h1>Advanced Functional Programming</h1>
+    <p><em>Composition, Reactive Streams, and Multiple Functions.</em></p>
+  </div>
+
+  <h2>You were right!</h2>
+  <p>Your answer for the previous lesson was <strong>100% correct</strong>: <code>spring.cloud.stream.bindings.processOrder-in-0.destination=orders-topic</code>.</p>
+  <p>You also correctly noticed that the previous lesson skipped a lot of the power hidden in the functional model. To keep the lessons bite-sized, I split the "Producing and Consuming Messages" documentation into two parts. Here is the advanced half!</p>
+
+  <h2>1. Functional Composition</h2>
+  
+  <p>You can dynamically compose complex handlers from a set of simple functions using the pipe symbol (<code>|</code>). This is incredibly useful for separating cross-cutting concerns (like enriching headers) from business logic.</p>
+  
+<pre><code>@Bean
+public Function&lt;String, String&gt; uppercase() { return String::toUpperCase; }
+
+@Bean
+public Function&lt;String, String&gt; wrapInQuotes() { return s -&gt; "\"" + s + "\""; }</code></pre>
+
+  <p>You can compose them via configuration without changing Java code:</p>
+  <pre><code>spring.cloud.function.definition=uppercase|wrapInQuotes</code></pre>
+  <p>The resulting binding names will be long (e.g., <code>uppercase|wrapInQuotes-in-0</code>), but you can rename them using <code>spring.cloud.stream.function.bindings.uppercase|wrapInQuotes-in-0=myInput</code>.</p>
+
+  <h2>2. Multiple Functions in One App</h2>
+  
+  <p>If you have multiple functions in your application, Spring Cloud Stream won't know which one(s) to bind to the broker. You must explicitly tell it using a semicolon (<code>;</code>).</p>
+  
+  <pre><code>spring.cloud.function.definition=uppercase;reverse</code></pre>
+  <p>This will create bindings for <em>both</em> functions independently: <code>uppercase-in-0</code> and <code>reverse-in-0</code>.</p>
+
+  <h2>3. Reactive Functions</h2>
+  
+  <p>Spring Cloud Function is built on top of Project Reactor. You can write your functions using <code>Flux</code> and <code>Mono</code> to process streams of data reactively.</p>
+  
+<pre><code>@Bean
+public Function&lt;Flux&lt;String&gt;, Flux&lt;String&gt;&gt; reactiveUpperCase() {
+    return flux -&gt; flux.map(String::toUpperCase);
+}</code></pre>
+  <div class="callout primary">
+    <strong>Warning:</strong> Reactive features like back-pressure only truly work end-to-end if you are using a reactive binder (like the Reactive Kafka Binder). If you use the standard Kafka binder, you get the convenience of the Flux API, but not the underlying reactive back-pressure guarantees.
+  </div>
+
+  <h2>4. Batch Consumers</h2>
+  
+  <p>Sometimes you want to process messages in batches rather than one by one. If your binder supports it (like Kafka), you can enable batch mode and change your function signature to accept a <code>List</code>.</p>
+  
+  <pre><code>spring.cloud.stream.bindings.myFunction-in-0.consumer.batch-mode=true</code></pre>
+  
+<pre><code>@Bean
+public Function&lt;List&lt;Person&gt;, Person&gt; findFirstPerson() {
+    return persons -&gt; persons.get(0);
+}</code></pre>
+
+  <h2>Primary Sources</h2>
+  
+  <ul>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/producing-and-consuming-messages.html" target="_blank">Producing and Consuming Messages</a></li>
+  </ul>
+
+  <div class="callout success">
+    <strong>Action:</strong> Review the Functional Composition section. How could you use composition to handle a scenario where you need to validate an incoming message before processing it, but you want to keep the validation logic reusable across multiple different functions?
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0004-the-functional-programming-model.html">← Previous</a>
+    <a href="#">Next lesson → Event Routing (Coming Soon)</a>
+  </div>
+
+  <div class="reminder">
+    <strong>Reminder:</strong> This agent is your teacher. If anything is unclear or you want to explore a related concept, ask a followup question in chat.
+  </div>
+</body>
+</html>
