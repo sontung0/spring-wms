@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0012 • Connecting to Multiple Systems</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="lesson-header">
+    <div class="lesson-meta">
+      <span class="lesson-number">Lesson 0012</span>
+      <span>Binder Abstraction • Phase 3</span>
+      <span>~8 min read</span>
+    </div>
+    <h1>Connecting to Multiple Systems</h1>
+    <p><em>Two brokers, same type, different hosts — all in one application.</em></p>
+  </div>
+
+  <h2>1. Beyond "Which Type" — "Which Instance"</h2>
+
+  <p>Lesson 0011 solved routing bindings to <em>different types</em> of binder (Kafka vs. RabbitMQ). But what if you need to talk to <strong>two separate instances of the same broker type</strong> — say, two different RabbitMQ clusters?</p>
+
+  <p>By default, binders share the application's Spring Boot auto-configuration, so only <strong>one instance</strong> of each binder type on the classpath gets created. To connect to more than one broker of the same type, you must define <strong>multiple named binder configurations</strong>, each with its own environment settings.</p>
+
+  <div class="callout primary">
+    <strong>Important side effect:</strong> Turning on explicit binder configuration <strong>disables the default binder configuration process altogether</strong>. Once you do this, every binder your application uses must be explicitly included in the configuration — there's no more "free" auto-detected binder.
+  </div>
+
+  <h2>2. Example: Two RabbitMQ Instances</h2>
+
+  <pre><code>spring:
+  cloud:
+    stream:
+      bindings:
+        input:
+          destination: thing1
+          binder: rabbit1
+        output:
+          destination: thing2
+          binder: rabbit2
+      binders:
+        rabbit1:
+          type: rabbit
+          environment:
+            spring:
+              rabbitmq:
+                host: &lt;host1&gt;
+        rabbit2:
+          type: rabbit
+          environment:
+            spring:
+              rabbitmq:
+                host: &lt;host2&gt;</code></pre>
+
+  <p>Here, <code>rabbit1</code> and <code>rabbit2</code> are both configuration <strong>names</strong> — not binder types. Each has its own <code>type: rabbit</code> plus its own isolated <code>environment</code> block (in this case, a different host). The <code>input</code> binding uses <code>rabbit1</code>, while <code>output</code> uses <code>rabbit2</code> — same binder type, different broker instances.</p>
+
+  <h2>3. The <code>environment</code> Block Is Just Spring Boot Properties</h2>
+
+  <p>The <code>environment</code> property under each named binder configuration can hold <strong>any</strong> Spring Boot property scoped to that binder — not just broker connection details. For example, you can override auto-configured beans by pointing at a custom configuration class:</p>
+
+  <pre><code>environment:
+    spring:
+        main:
+           sources: com.acme.config.MyCustomBinderConfiguration</code></pre>
+
+  <p>Or activate a dedicated Spring profile just for that binder's environment:</p>
+
+  <pre><code>environment:
+    spring:
+        profiles:
+           active: myBinderProfile</code></pre>
+
+  <h2>4. Opting Out of the Default Binder Process</h2>
+
+  <p>Some frameworks want to define binder configurations that Spring Cloud Stream can reference by name, <strong>without</strong> those configurations affecting (or being affected by) the default binder auto-configuration. This is done with the <code>defaultCandidate</code> flag:</p>
+
+  <pre><code>spring.cloud.stream.binders.&lt;configurationName&gt;.defaultCandidate=false</code></pre>
+
+  <p>This marks a binder configuration as existing independently of the default binder configuration process.</p>
+
+  <h2>Primary Source</h2>
+
+  <ul>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/multiple-systems.html" target="_blank">Connecting to Multiple Systems</a></li>
+  </ul>
+
+  <div class="callout success">
+    <strong>Comprehensive Assessment:</strong><br><br>
+    1. What happens by default when there's only one binder configuration process, if your application needs to connect to two brokers of the <em>same</em> type?<br>
+    2. What critical side effect happens the moment you turn on explicit multiple binder configuration?<br>
+    3. In the two-RabbitMQ example, what distinguishes <code>rabbit1</code> from <code>rabbit2</code> — are they different binder types, or something else?<br>
+    4. What property would you set to mark a named binder configuration as independent of the default binder configuration process?
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0011-multiple-binders-on-the-classpath.html">← Previous</a>
+    <a href="0013-customizing-binders-in-multi-binder-applications.html">Next lesson → Customizing Binders in Multi-Binder Applications</a>
+  </div>
+
+  <div class="reminder">
+    <strong>Reminder:</strong> This agent is your teacher. If anything is unclear or you want to explore a related concept, ask a followup question in chat.
+  </div>
+</body>
+</html>

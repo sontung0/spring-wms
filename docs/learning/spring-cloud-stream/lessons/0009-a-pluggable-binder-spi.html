@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0009 • A Pluggable Binder SPI</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="lesson-header">
+    <div class="lesson-meta">
+      <span class="lesson-number">Lesson 0009</span>
+      <span>Binder Abstraction • Phase 3</span>
+      <span>~8 min read</span>
+    </div>
+    <h1>A Pluggable Binder SPI</h1>
+    <p><em>The actual interface that makes Kafka, RabbitMQ, and every other binder possible.</em></p>
+  </div>
+
+  <h2>1. The <code>Binder</code> Interface</h2>
+
+  <p>In the last lesson you learned the <em>conceptual</em> shape of <code>bindProducer()</code> and <code>bindConsumer()</code>. Now let's look at the real interface that defines them. This single interface is the foundation of the entire Binder SPI:</p>
+
+  <pre><code>public interface Binder&lt;T, C extends ConsumerProperties, P extends ProducerProperties&gt; {
+
+    Binding&lt;T&gt; bindConsumer(String bindingName, String group, T inboundBindTarget, C consumerProperties);
+
+    Binding&lt;T&gt; bindProducer(String bindingName, T outboundBindTarget, P producerProperties);
+}</code></pre>
+
+  <p>Notice it's generic over three type parameters:</p>
+
+  <ul>
+    <li><code>T</code> — the type of the <strong>bind target</strong> (input/output). This lets different binder families use different underlying channel types.</li>
+    <li><code>C extends ConsumerProperties</code> — the consumer configuration type.</li>
+    <li><code>P extends ProducerProperties</code> — the producer configuration type.</li>
+  </ul>
+
+  <div class="callout primary">
+    <strong>Why generics matter here:</strong> Because <code>C</code> and <code>P</code> are type parameters (not hardcoded classes), a specific binder implementation (like the Kafka binder) can define its own <strong>extended</strong> properties — e.g., Kafka-specific settings — while still satisfying the generic <code>Binder</code> contract. This is what lets each binder add supplemental, type-safe configuration without changing the core SPI.
+  </div>
+
+  <h2>2. Anatomy of a Binder Implementation</h2>
+
+  <p>Every concrete binder (Kafka, RabbitMQ, etc.) is built from the same three pieces:</p>
+
+  <ol>
+    <li>A class that <strong>implements the <code>Binder</code> interface</strong> — this is where <code>bindConsumer()</code>/<code>bindProducer()</code> are actually wired to the broker's client library.</li>
+    <li>A Spring <code>@Configuration</code> class that creates a bean of type <code>Binder</code>, along with all the middleware connection infrastructure (connection factories, admin clients, etc.).</li>
+    <li>A <code>META-INF/spring.binders</code> file on the classpath that registers the binder by name, pointing at its configuration class:</li>
+  </ol>
+
+  <pre><code>kafka:\
+org.springframework.cloud.stream.binder.kafka.config.KafkaBinderConfiguration</code></pre>
+
+  <p>This file is the mechanism Spring Cloud Stream uses to auto-discover which binder(s) are available on the classpath — you'll see exactly how that discovery works in the next lesson, "Binder Detection."</p>
+
+  <div class="callout primary">
+    <strong>Extensibility:</strong> Because the Binder abstraction is a first-class extension point, you are not limited to the binders Spring ships. If no existing binder fits your middleware, you can implement your own on top of this same SPI — following the three-piece pattern above.
+  </div>
+
+  <h2>Primary Source</h2>
+
+  <ul>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/overview-binder-api.html" target="_blank">A pluggable Binder SPI</a></li>
+  </ul>
+
+  <div class="callout success">
+    <strong>Comprehensive Assessment:</strong><br><br>
+    1. What are the three generic type parameters on the <code>Binder</code> interface, and what does each represent?<br>
+    2. What two methods must a class implement to satisfy the <code>Binder</code> interface?<br>
+    3. Besides the class implementing <code>Binder</code>, what other two artifacts make up a complete binder implementation?<br>
+    4. What is the exact filename (with path) that Spring Cloud Stream scans to auto-discover binders on the classpath?
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0008-the-binder-abstraction.html">← Previous</a>
+    <a href="0010-binder-detection.html">Next lesson → Binder Detection</a>
+  </div>
+
+  <div class="reminder">
+    <strong>Reminder:</strong> This agent is your teacher. If anything is unclear or you want to explore a related concept, ask a followup question in chat.
+  </div>
+</body>
+</html>

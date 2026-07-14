@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0010 • Binder Detection</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="lesson-header">
+    <div class="lesson-meta">
+      <span class="lesson-number">Lesson 0010</span>
+      <span>Binder Abstraction • Phase 3</span>
+      <span>~5 min read</span>
+    </div>
+    <h1>Binder Detection</h1>
+    <p><em>How Spring Cloud Stream figures out which binder to actually use.</em></p>
+  </div>
+
+  <h2>1. Classpath Detection</h2>
+
+  <p>You learned in Lesson 0009 that a binder registers itself via a <code>META-INF/spring.binders</code> file. But how does Spring Cloud Stream decide which registered binder to actually activate for your application?</p>
+
+  <p>By default, Spring Cloud Stream relies on <strong>Spring Boot's auto-configuration</strong> to drive this. The rule is simple:</p>
+
+  <div class="callout primary">
+    <strong>The rule:</strong> If a <strong>single</strong> <code>Binder</code> implementation is found on the classpath, Spring Cloud Stream automatically uses it. No configuration required.
+  </div>
+
+  <p>For example, if you want your application to bind only to RabbitMQ, you simply add the RabbitMQ binder as a dependency:</p>
+
+  <pre><code>&lt;dependency&gt;
+  &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+  &lt;artifactId&gt;spring-cloud-stream-binder-rabbit&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+
+  <p>Because this is the <em>only</em> binder on the classpath, Spring Cloud Stream detects it automatically and wires it up — you never have to tell it "use RabbitMQ" explicitly.</p>
+
+  <div class="callout primary">
+    <strong>Connect the dots:</strong> This is exactly why swapping from Kafka to RabbitMQ (as mentioned in Lesson 0008) can be "just a dependency change." Remove the Kafka binder JAR, add the RabbitMQ binder JAR, and classpath detection does the rest — as long as only one binder is present.
+  </div>
+
+  <p>What happens when <strong>more than one</strong> binder is on the classpath at the same time? That's not something automatic detection can resolve on its own — and it's exactly the subject of the next lesson.</p>
+
+  <h2>Primary Source</h2>
+
+  <ul>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/binder-detection.html" target="_blank">Binder Detection</a></li>
+  </ul>
+
+  <div class="callout success">
+    <strong>Comprehensive Assessment:</strong><br><br>
+    1. By default, what does Spring Cloud Stream rely on to configure the binding process?<br>
+    2. If exactly one <code>Binder</code> implementation is found on the classpath, what does Spring Cloud Stream do?<br>
+    3. What Maven artifact ID would you add to bind only to RabbitMQ?<br>
+    4. What scenario is classpath detection alone unable to resolve, and which upcoming lesson addresses it?
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0009-a-pluggable-binder-spi.html">← Previous</a>
+    <a href="0011-multiple-binders-on-the-classpath.html">Next lesson → Multiple Binders on the Classpath</a>
+  </div>
+
+  <div class="reminder">
+    <strong>Reminder:</strong> This agent is your teacher. If anything is unclear or you want to explore a related concept, ask a followup question in chat.
+  </div>
+</body>
+</html>

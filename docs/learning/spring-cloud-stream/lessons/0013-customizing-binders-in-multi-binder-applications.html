@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0013 • Customizing Binders in Multi-Binder Applications</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="lesson-header">
+    <div class="lesson-meta">
+      <span class="lesson-number">Lesson 0013</span>
+      <span>Binder Abstraction • Phase 3 (Final)</span>
+      <span>~7 min read</span>
+    </div>
+    <h1>Customizing Binders in Multi-Binder Applications</h1>
+    <p><em>Wrapping up Phase 3: reaching into a specific binder's internals safely.</em></p>
+  </div>
+
+  <h2>1. Why Single-Binder Customization Doesn't Just Work Here</h2>
+
+  <p>In a single-binder application, if you want to customize binder behavior, you can simply expose a customization bean — the binder's application context can see it directly.</p>
+
+  <p>But in a <strong>multi-binder</strong> setup (Lesson 0012), each binder lives in its own <strong>separate application context</strong>. Your main application context and each binder's context are isolated from each other, so a plain <code>@Bean</code> customization won't automatically reach a specific binder.</p>
+
+  <div class="callout primary">
+    <strong>The solution:</strong> Provide a <code>BinderCustomizer</code> implementation. Spring Cloud Stream guarantees these customizations are applied to each binder <strong>before</strong> the application starts using it — even though the binders live in different contexts.
+  </div>
+
+  <h2>2. Implementing a <code>BinderCustomizer</code></h2>
+
+  <p>The customizer receives the actual binder instance and its name, and it's your job to check the type and cast before applying anything binder-specific:</p>
+
+  <pre><code>@Bean
+public BinderCustomizer binderCustomizer() {
+    return (binder, binderName) -> {
+        if (binder instanceof KafkaMessageChannelBinder kafkaMessageChannelBinder) {
+            kafkaMessageChannelBinder.setRebalanceListener(...);
+        }
+        else if (binder instanceof KStreamBinder) {
+            ...
+        }
+        else if (binder instanceof RabbitMessageChannelBinder) {
+            ...
+        }
+    };
+}</code></pre>
+
+  <p>Because a multi-binder application can mix binder types freely, the customizer must explicitly check <code>instanceof</code> for each binder type it cares about before applying type-specific configuration.</p>
+
+  <h2>3. Filtering by Binder Name, Not Just Type</h2>
+
+  <p>Recall from Lesson 0012 that you can have <strong>two instances of the same binder type</strong> (e.g., <code>rabbit1</code> and <code>rabbit2</code>). In that case, checking <code>instanceof</code> alone isn't enough to tell them apart.</p>
+
+  <div class="callout primary">
+    <strong>Key detail:</strong> The customizer callback also receives <code>binderName</code> — the same name used in <code>spring.cloud.stream.binders.&lt;name&gt;</code> configuration. When there's more than one instance of the same binder type, use this name to apply customization to only the correct instance.
+  </div>
+
+  <h2>Phase 3 Complete!</h2>
+
+  <p>This wraps up the "Binder Abstraction (Deep Dive)" phase. Across Lessons 0008–0013 you've gone from the conceptual producer/consumer relationship, through the actual <code>Binder</code> SPI, classpath auto-detection, multi-binder-type routing, multi-instance connections, and finally binder-specific customization.</p>
+
+  <h2>Primary Source</h2>
+
+  <ul>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/binder-customizer.html" target="_blank">Customizing binders in multi binder applications</a></li>
+  </ul>
+
+  <div class="callout success">
+    <strong>Comprehensive Assessment:</strong><br><br>
+    1. Why doesn't a plain customization bean work automatically in a multi-binder application, even though it works fine with a single binder?<br>
+    2. What interface must you implement to customize binders in a multi-binder scenario, and what two parameters does its callback receive?<br>
+    3. When would you need to filter by <code>binderName</code> rather than just checking the binder's type with <code>instanceof</code>?<br>
+    4. When does Spring Cloud Stream guarantee that these customizations are applied, relative to the binder being used?
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0012-connecting-to-multiple-systems.html">← Previous</a>
+    <a href="#">Next lesson → Error Handling (Coming Soon)</a>
+  </div>
+
+  <div class="reminder">
+    <strong>Reminder:</strong> This agent is your teacher. If anything is unclear or you want to explore a related concept, ask a followup question in chat.
+  </div>
+</body>
+</html>

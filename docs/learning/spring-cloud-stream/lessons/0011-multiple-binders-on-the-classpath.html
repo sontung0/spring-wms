@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0011 • Multiple Binders on the Classpath</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <div class="lesson-header">
+    <div class="lesson-meta">
+      <span class="lesson-number">Lesson 0011</span>
+      <span>Binder Abstraction • Phase 3</span>
+      <span>~6 min read</span>
+    </div>
+    <h1>Multiple Binders on the Classpath</h1>
+    <p><em>What happens when auto-detection can't pick a winner.</em></p>
+  </div>
+
+  <h2>1. The Problem</h2>
+
+  <p>Lesson 0010 established the rule: with exactly <strong>one</strong> binder on the classpath, Spring Cloud Stream auto-selects it. But what if your application needs to talk to <strong>both</strong> Kafka and RabbitMQ at once? Now there are two <code>META-INF/spring.binders</code> registrations, and the framework can no longer guess which one to use for which binding.</p>
+
+  <div class="callout primary">
+    <strong>The rule:</strong> When multiple binders are present on the classpath, the application <strong>must indicate which binder to use for each destination binding</strong>. Auto-detection alone is not enough.
+  </div>
+
+  <h2>2. Global Selection: <code>defaultBinder</code></h2>
+
+  <p>If you want one binder to be the default for anything that doesn't specify otherwise, set:</p>
+
+  <pre><code>spring.cloud.stream.defaultBinder=rabbit</code></pre>
+
+  <p>This applies globally, across all bindings that don't override it individually.</p>
+
+  <h2>3. Per-Binding Selection</h2>
+
+  <p>More often, you want fine-grained control — for example, a processor that reads from Kafka and writes to RabbitMQ. You configure the binder per-binding, using the binding name plus <code>.binder</code>:</p>
+
+  <pre><code>spring.cloud.stream.bindings.input.binder=kafka
+spring.cloud.stream.bindings.output.binder=rabbit</code></pre>
+
+  <p>Here, a processor with bindings named <code>input</code> (read) and <code>output</code> (write) is explicitly wired to two different messaging systems in a single application.</p>
+
+  <div class="callout primary">
+    <strong>Connect the dots:</strong> Recall from Lesson 0009 that each binder registers itself under a name (the key in <code>spring.binders</code>, e.g. <code>kafka</code> or <code>rabbit</code>). That same name is what you reference in <code>defaultBinder</code> and in the per-binding <code>.binder</code> property.
+  </div>
+
+  <h2>Primary Source</h2>
+
+  <ul>
+    <li><a href="https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/multiple-binders.html" target="_blank">Multiple Binders on the Classpath</a></li>
+  </ul>
+
+  <div class="callout success">
+    <strong>Comprehensive Assessment:</strong><br><br>
+    1. When multiple binders are on the classpath, what must the application explicitly indicate?<br>
+    2. What property sets a global default binder, and what would you set it to in order to default to Kafka?<br>
+    3. For a processor with bindings named <code>input</code> and <code>output</code>, what two property keys would route <code>input</code> to RabbitMQ and <code>output</code> to Kafka?<br>
+    4. Where does the identifying name used in <code>defaultBinder</code> (like <code>kafka</code> or <code>rabbit</code>) actually come from?
+  </div>
+
+  <div class="lesson-nav">
+    <a href="0010-binder-detection.html">← Previous</a>
+    <a href="0012-connecting-to-multiple-systems.html">Next lesson → Connecting to Multiple Systems</a>
+  </div>
+
+  <div class="reminder">
+    <strong>Reminder:</strong> This agent is your teacher. If anything is unclear or you want to explore a related concept, ask a followup question in chat.
+  </div>
+</body>
+</html>
